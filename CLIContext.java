@@ -3,6 +3,10 @@ package org.processmining.contexts.cli;
 import org.processmining.framework.plugin.PluginContext;
 import org.processmining.framework.plugin.impl.AbstractGlobalContext;
 
+/**
+ * 
+ * @author Utente
+ */
 public class CLIContext extends AbstractGlobalContext {
 
 	private final CLIPluginContext mainPluginContext;

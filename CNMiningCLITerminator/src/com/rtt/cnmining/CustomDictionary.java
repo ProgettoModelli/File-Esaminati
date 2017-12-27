@@ -2,11 +2,17 @@ package com.rtt.cnmining;
 
 import java.util.ArrayList;
 
+/**
+ * 
+ * @author Utente
+ * @param <T>
+ * @param <V> 
+ */
 public class CustomDictionary<T, V> {
 
     public ArrayList<T> keys;
     public ArrayList<V> values;
-
+    
     public CustomDictionary(){
         this.keys = new ArrayList<>();
         this.values = new ArrayList<>();

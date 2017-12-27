@@ -3,6 +3,10 @@ package org.processmining.models.cnet2ad;
 import java.util.ArrayList;
 import java.util.Random;
 
+/**
+ * 
+ * @author Utente
+ */
 public class ADgraph {
 
     private ArrayList<ADnode> nodes;
@@ -21,8 +25,8 @@ public class ADgraph {
         this.name = name;
     }
 
-    public ADnode add(ADnode node){
-        ADnode n = this.node(node.name);
+    public ADnode add(ADnode corda){
+        ADnode n = this.node(corda.name);
         if( n != null )
             return n;
 
@@ -30,13 +34,13 @@ public class ADgraph {
         return node;
     }
 
-    public ADedge add(ADedge edge){
-        ADedge e = this.edge(edge.begin().name, edge.end().name);
+    public ADedge add(ADedge spigolo){
+        ADedge e = this.edge(spigolo.begin().name, spigolo.end().name);
         if( e != null )
             return e;
 
-        this.edges.add(edge);
-        return edge;
+        this.edges.add(spigolo);
+        return spigolo;
     }
 
     public ArrayList<ADnode> nodes(){
@@ -75,9 +79,9 @@ public class ADgraph {
     }
 
     // Ritorna il nodo avente nome specificato
-    public ADnode node(String name){
+    public ADnode nodo(String nome){
         for(ADnode node: this.nodes()){
-            if(node.name.equals((name)))
+            if(node.name.equals((nome)))
                 return node;
         }
         return null;
@@ -92,10 +96,10 @@ public class ADgraph {
         return null;
     }
 
-    public ArrayList<ADnode> followers(ADnode node){
+    public ArrayList<ADnode> followers(ADnode corda){
         ArrayList<ADnode> result = new ArrayList<ADnode>();
 
-        for(ADedge edge: this.edgesStartWith(node)){
+        for(ADedge edge: this.edgesStartWith(corda)){
             if(result.contains(edge.end()) == false)
                 result.add(edge.end());
         }
@@ -103,10 +107,10 @@ public class ADgraph {
         return result;
     }
 
-    public ArrayList<ADnode> predecessors(ADnode node){
+    public ArrayList<ADnode> predecessors(ADnode corda){
         ArrayList<ADnode> result = new ArrayList<ADnode>();
 
-        for(ADedge edge: this.edgesEndWith(node)){
+        for(ADedge edge: this.edgesEndWith(corda)){
             if(result.contains(edge.begin()) == false)
                 result.add(edge.begin());
         }
@@ -119,14 +123,14 @@ public class ADgraph {
     }
 
     // Ritorna la lista di archi in uscita dal nodo specificato
-    public ArrayList<ADedge> edgesStartWith(ADnode node){
+    public ArrayList<ADedge> edgesStartWith(ADnode corda){
         ArrayList<ADedge> result = new ArrayList<ADedge>();
 
-        if(this.nodes.contains(node) == false)
+        if(this.nodes.contains(nodo) == false)
             return result;
 
         for(ADedge edge: this.edges()){
-            if(edge.begin().equals(node) && result.contains(edge) == false)
+            if(edge.begin().equals(nodo) && result.contains(edge) == false)
                 result.add(edge);
         }
 
@@ -134,14 +138,14 @@ public class ADgraph {
     }
 
     // Ritorna la lista di archi in entrata dal nodo specificato
-    public ArrayList<ADedge> edgesEndWith(ADnode node){
+    public ArrayList<ADedge> edgesEndWith(ADnode corda){
         ArrayList<ADedge> result = new ArrayList<ADedge>();
 
-        if(this.nodes.contains(node) == false)
+        if(this.nodes.contains(corda) == false)
             return result;
 
         for(ADedge edge: this.edges()){
-            if(edge.end().equals(node) && result.contains(edge) == false)
+            if(edge.end().equals(corda) && result.contains(edge) == false)
                 result.add(edge);
         }
 
@@ -230,11 +234,11 @@ public class ADgraph {
         return xmi.toString();
     }
 
-    private String xmiOutcoming(ADnode node){
+    private String xmiOutcoming(ADnode corda){
         StringBuilder str = new StringBuilder();
 
         String comma = "";
-        for(ADedge edge: this.edgesStartWith(node))
+        for(ADedge edge: this.edgesStartWith(corda))
         {
             str.append(comma);
             str.append(edge.id);
@@ -245,11 +249,11 @@ public class ADgraph {
     }
 
 
-    private String xmiIncoming(ADnode node){
+    private String xmiIncoming(ADnode corda){
         StringBuilder str = new StringBuilder();
 
         String comma = "";
-        for(ADedge edge: this.edgesEndWith(node))
+        for(ADedge edge: this.edgesEndWith(corda))
         {
             str.append(comma);
             str.append(edge.id);

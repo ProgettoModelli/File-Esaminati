@@ -44,7 +44,7 @@ public class FactoryRunner extends BlockJUnit4ClassRunner {
 		}
 	}
 
-	protected void computeTests() throws Exception {
+	private void computeTests() throws Exception {
 		tests.addAll(super.computeTestMethods());
 		tests.addAll(computeFactoryTests());
 		
@@ -77,13 +77,18 @@ public class FactoryRunner extends BlockJUnit4ClassRunner {
 			// For each object returned by the factory.
 			for (Object instance: (Iterable<?>) instances) {
 				// Find any methods marked with @FactoryTest.
-				for (FrameworkMethod m: new TestClass(instance.getClass()).getAnnotatedMethods(FactoryTest.class))
+                                TestClass v=metodoManutenzione (instance);
+				for (FrameworkMethod m: v)
 					tests.add(new FrameworkFactoryTest(m.getMethod(), instance, method.getName()));
 			}
 		}
-
 		return tests;
 	}
+        
+        private TestClass metodoManutenzione (Object instance){
+            TestClass v=new TestClass(instance.getClass()).getAnnotatedMethods(FactoryTest.class);
+            return v;
+        }
 	
 	/**
 	 * {@inheritDoc}

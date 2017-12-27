@@ -75,13 +75,12 @@ public class PromTest extends TestCase {
 		String lookUpDirString = System.getProperty("test.inclassTestsAt", defaultClassFileLocations);
 		
 		LinkedList<String> lookUpDirs = new LinkedList<String>();
-		int comma;
-		while ((comma = lookUpDirString.indexOf(",")) >= 0) {
-			String dir = lookUpDirString.substring(0, comma);
-			lookUpDirs.add(dir);
-			lookUpDirString = lookUpDirString.substring(comma+1);
-		}
-		lookUpDirs.add(lookUpDirString);
+
+        String[] directories = lookUpDirString.split(",");
+        for (String directory : directories) {
+            lookUpDirs.add(directory);
+        }
+
 		
 		AllInclassMethodTests testCollector = new AllInclassMethodTests();
 		for (String classFileLocation : lookUpDirs)

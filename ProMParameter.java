@@ -3,6 +3,10 @@ package org.processmining.contexts.uitopia.model;
 import org.deckfour.uitopia.api.model.Parameter;
 import org.deckfour.uitopia.api.model.ResourceType;
 
+/**
+ * 
+ * @author Utente
+ */
 public class ProMParameter implements Parameter {
 
 	private final ResourceType type;

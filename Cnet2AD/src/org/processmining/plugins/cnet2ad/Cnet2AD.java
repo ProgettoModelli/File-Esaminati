@@ -21,6 +21,10 @@ import org.processmining.models.graphbased.directed.bpmn.BPMNNode;
 import org.processmining.models.graphbased.directed.bpmn.elements.Flow;
 import org.processmining.models.graphbased.directed.bpmn.elements.Gateway;
 
+/**
+ * 
+ * @author Utente
+ */
 public class Cnet2AD {
 			
 	/*
@@ -28,7 +32,7 @@ public class Cnet2AD {
 	 * del plugin, come parametri di input e output
 	 * 
 	 * Da notare che sono associate ad un metodo statico,
-	 * che verrà  richiamato all'esecuzione del plugin
+	 * che verrï¿½ richiamato all'esecuzione del plugin
 	 */	
 	
 	/*
@@ -107,7 +111,7 @@ public class Cnet2AD {
         }
         catch (IOException ioe)
         {
-            ioe.printStackTrace();
+            System.out.println("error");
         }
     }
 	
@@ -120,7 +124,7 @@ public class Cnet2AD {
     }
 
     public ADgraph process(){
-        // Inizializza il grafo inserendovi i nodi rappresentanti le attività
+        // Inizializza il grafo inserendovi i nodi rappresentanti le attivitï¿½
         ADgraph graph = new ADgraph();
 
         this.computeNodes(graph);
@@ -129,6 +133,20 @@ public class Cnet2AD {
         this.fixIncomingEdges(graph);
 
         return graph;
+    }
+    
+    public void cN(Iterator<Gateway> g, BPMNNode node, ADnode n){
+        while(g.hasNext()){
+                Gateway gateway = g.next();
+
+                if(gateway.getLabel().equals(node.getLabel())){
+                    if(gateway.getGatewayType() == Gateway.GatewayType.PARALLEL)
+                        n.fork();
+                    else n.branch();
+
+                    break;
+                }
+            }
     }
 
     private void computeNodes(ADgraph graph){
@@ -150,20 +168,11 @@ public class Cnet2AD {
             // Controllo se si tratta di un nodo speciale
             Collection<Gateway> gateways = this.model.getGateways();
             Iterator<Gateway> g = gateways.iterator();
-            while(g.hasNext()){
-                Gateway gateway = g.next();
+            cN(g, node, n);
+            
 
-                if(gateway.getLabel().equals(node.getLabel())){
-                    if(gateway.getGatewayType() == Gateway.GatewayType.PARALLEL)
-                        n.fork();
-                    else n.branch();
-
-                    break;
-                }
-            }
-
-            // Siccome non posso esmainare esattamente se è un fork o un join
-            // verifico, se ho in output un solo arco, è un join
+            // Siccome non posso esmainare esattamente se ï¿½ un fork o un join
+            // verifico, se ho in output un solo arco, ï¿½ un join
             if(n.isType(ADnode.ForkNode) && this.model.getOutEdges(node).size() == 1)
                 n.join();
 
@@ -186,6 +195,12 @@ public class Cnet2AD {
                     flow.getSource().getLabel() + " -> " + flow.getTarget().getLabel()
             );
         }
+    }
+    
+    public void fOEP1(ArrayList<ADedge> edges, ADnode forkNode){
+        for(ADedge e: edges){
+                e.begin(forkNode);
+            }
     }
 
     private void fixOutcomingEdges(ADgraph graph){
@@ -214,10 +229,9 @@ public class Cnet2AD {
             ADnode forkNode = new ADnode("Fork" + node.name);
             forkNode.fork();
             addAtTheEnd.add(forkNode);
-
-            for(ADedge e: edges){
-                e.begin(forkNode);
-            }
+            
+            fOEP1(edges, forkNode);
+            
             graph.add(new ADedge(node, forkNode));
         }
 

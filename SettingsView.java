@@ -19,7 +19,10 @@ import com.fluxicon.slickerbox.factory.SlickerFactory;
  * Questa classe implementa l'interfaccia grafica
  * utilizzata per la configurazione del plugin
  */
-
+/**
+ * 
+ * @author Utente
+ */
 public class SettingsView {
 
 	private UIPluginContext context;

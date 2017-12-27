@@ -117,24 +117,55 @@ public class ScriptExecutor {
 	 * 
 	 * @return
 	 */
+        
+        private static int wP1(Signature signature, int index, StringBuffer strBuff){
+            for (Class<?> cl : signature.getParameterTypes()) {
+							if (index > 0) {
+								strBuff.append(", ");
+							}
+							strBuff.append(cl.getCanonicalName());
+							strBuff.append(" p" + index++);
+						}
+            return index;
+        }
+        
+        private static void wPP2(int signParamTypesSize, StringBuffer strBuff){
+            for (int i = 0; i < signParamTypesSize; i++) {
+							if (i > 0) {
+								strBuff.append(", ");
+							}
+							strBuff.append("p" + i);
+						}
+        }
+        
+        private static void wPP0(Signature signature, StringBuffer strBuff){
+            if (signature.getReturnTypes().size() == 1) {
+							strBuff.append(Object.class.getCanonicalName());
+						} else {
+							strBuff.append(Object[].class.getCanonicalName());
+						}
+        }
+        
 	private LinkedList<PluginDescriptor> workingPlugins() {
 		LinkedList<PluginDescriptor> workingPlugins = new LinkedList<PluginDescriptor>();
 
 		Set<Signature> foundSignatures = new HashSet<Signature>();
 		String nl = System.getProperty("line.separator");
 		int pluginIndex = 0;
-
-		for (PluginDescriptor plugin : context.getPluginManager().getAllPlugins())
+                // method signatures of this plugin
+		Set<Signature> thisPluginSignatures = new HashSet<Signature>();
+		PluginDescriptor[] plugins = context.getPluginManager().getAllPlugins();
+                StringBuffer init = new StringBuffer();
+		Interpreter pluginInterpreter = new Interpreter();
+		for (PluginDescriptor plugin : plugins)
 		{
 			if (Boot.VERBOSE == Level.ALL) System.out.println("checking "+plugin.getName());
 
-			// method signatures of this plugin
-			Set<Signature> thisPluginSignatures = new HashSet<Signature>();
+			
 			
 			try {
 				
-				StringBuffer init = new StringBuffer();
-				Interpreter pluginInterpreter = new Interpreter();
+				
 				pluginInterpreter.set("__main_context", context);
 				
 				// the right context type is checked at start by the
@@ -142,7 +173,8 @@ public class ScriptExecutor {
 				// if
 				// (plugin.getContextType().isAssignableFrom(context.getClass()))
 				// {
-				for (int j = 0; j < plugin.getParameterTypes().size(); j++) {
+				int pluginParamTypesSize = plugin.getParameterTypes().size();
+				for (int j = 0; j < pluginParamTypesSize; j++) {
 					Signature signature = getSignature(plugin, j);
 					thisPluginSignatures.add(signature);
 
@@ -152,22 +184,14 @@ public class ScriptExecutor {
 
 						pluginInterpreter.set("__plugin_descriptor" + pluginIndex, plugin);
 						pluginInterpreter.set("__plugin_method_index" + pluginIndex, j);
-
-						if (signature.getReturnTypes().size() == 1) {
-							init.append(Object.class.getCanonicalName());
-						} else {
-							init.append(Object[].class.getCanonicalName());
-						}
+                                                wPP0(signature, init);
+						
 						init.append(" " + signature.getName() + "(");
 
 						int index = 0;
-						for (Class<?> cl : signature.getParameterTypes()) {
-							if (index > 0) {
-								init.append(", ");
-							}
-							init.append(cl.getCanonicalName());
-							init.append(" p" + index++);
-						}
+                                                
+                                                index = wPP1(signature, index, init);
+						
 						init.append(") {" + nl);
 						init.append("    " + PluginContext.class.getCanonicalName()
 								+ " context = __main_context.createChildContext(\"Result of ");
@@ -175,12 +199,9 @@ public class ScriptExecutor {
 
 						init.append("    __plugin_descriptor" + pluginIndex + ".invoke(__plugin_method_index"
 								+ pluginIndex + ", context, new " + (Object[].class.getCanonicalName()) + " { ");
-						for (int i = 0; i < signature.getParameterTypes().size(); i++) {
-							if (i > 0) {
-								init.append(", ");
-							}
-							init.append("p" + i);
-						}
+						int signParamTypesSize = signature.getParameterTypes().size();
+                                                wPP2(signParamTypesSize, init);
+						
 						init.append(" });" + nl);
 
 						if (signature.getReturnTypes().size() > 1) {
@@ -214,7 +235,35 @@ public class ScriptExecutor {
 		}
 		return workingPlugins;
 	}
+        
+        private static void iP1(Signature signature, StringBuffer strBuff){
+            if (signature.getReturnTypes().size() == 1) {
+						strBuff.append(Object.class.getCanonicalName());
+					} else {
+						strBuff.append(Object[].class.getCanonicalName());
+					}
+        }
 
+        private static int iP2(Signature signature, StringBuffer strBuff, int index){
+            for (Class<?> cl : signature.getParameterTypes()) {
+						if (index > 0) {
+							strBuff.append(", ");
+						}
+						strBuff.append(cl.getCanonicalName());
+						strBuff.append(" p" + index++);
+					}
+            return index;
+        }
+        
+        private static void iP3(int signParamTypesSize, StringBuffer strBuff){
+            for (int i = 0; i < signParamTypesSize; i++) {
+						if (i > 0) {
+							strBuff.append(", ");
+						}
+						strBuff.append("p" + i);
+					}
+        }
+        
 	private void init() throws ScriptExecutionException {
 		String nl = System.getProperty("line.separator");
 		int pluginIndex = 0;
@@ -225,8 +274,8 @@ public class ScriptExecutor {
 		interpreter.set("__main_context", context);
 		
 		System.out.println("initializing all plugins");
-	
-    	for (PluginDescriptor plugin : context.getPluginManager().getAllPlugins()) {
+		PluginDescriptor[] plugins = context.getPluginManager().getAllPlugins();
+    	for (PluginDescriptor plugin : plugins) {
     	// skip scanning for working plugins. question: why does scanning for working plugins
     	// take so much more time?
 		//for (PluginDescriptor plugin : workingPlugins()) {
@@ -235,7 +284,8 @@ public class ScriptExecutor {
 			// the right context type is checked at start by the pluginmanager
 			// if (plugin.getContextType().isAssignableFrom(context.getClass()))
 			// {
-			for (int j = 0; j < plugin.getParameterTypes().size(); j++) {
+            int pluginParamTypesSize = plugin.getParameterTypes().size();
+			for (int j = 0; j < pluginParamTypesSize; j++) {
 				Signature signature = getSignature(plugin, j);
 
 				if (!availablePlugins.contains(signature)) {
@@ -256,22 +306,14 @@ public class ScriptExecutor {
 					// A script can then use the transcribed name of the Java plugin to call the plugin.
 
 					// signature of the wrapper method: return type, name, ...
-					if (signature.getReturnTypes().size() == 1) {
-						init.append(Object.class.getCanonicalName());
-					} else {
-						init.append(Object[].class.getCanonicalName());
-					}
+                                        iP1(signature, init);
+					
 					init.append(" " + signature.getName() + "(");
 
 					// signature of the wrapper method: ... parameters ...
 					int index = 0;
-					for (Class<?> cl : signature.getParameterTypes()) {
-						if (index > 0) {
-							init.append(", ");
-						}
-						init.append(cl.getCanonicalName());
-						init.append(" p" + index++);
-					}
+                                        index = iP2(signature, init, index);
+					
 
 					// body of the wrapper method: get execution context and invoke plugin
 					init.append(") {" + nl);
@@ -281,12 +323,10 @@ public class ScriptExecutor {
 
 					init.append("    __plugin_descriptor" + pluginIndex + ".invoke(__plugin_method_index"
 							+ pluginIndex + ", context, new " + (Object[].class.getCanonicalName()) + " { ");
-					for (int i = 0; i < signature.getParameterTypes().size(); i++) {
-						if (i > 0) {
-							init.append(", ");
-						}
-						init.append("p" + i);
-					}
+
+					int signParamTypesSize = signature.getParameterTypes().size();
+                                        iP3(signParamTypesSize, init);
+					
 					init.append(" });" + nl);
 
 					// body of the wrapper method: wait for plugin method to complete and return result
@@ -312,7 +352,7 @@ public class ScriptExecutor {
 				
 		} catch (EvalError e) {
 			System.err.println("Failed to load one of the plugins.");
-			throw new ScriptExecutionException(e);
+			throw new ScriptExecutionException("error");
 		} catch (NoClassDefFoundError e) {
 			System.err.println("Failed to load one of the plugins.");
 			throw new ScriptExecutionException("Missing class "+e.getMessage());
@@ -335,7 +375,7 @@ public class ScriptExecutor {
 		try {
 			interpreter.set(name, value);
 		} catch (EvalError e) {
-			throw new ScriptExecutionException(e);
+			throw new ScriptExecutionException("error");
 		}
 	}
 

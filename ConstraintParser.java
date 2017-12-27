@@ -9,6 +9,10 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+/**
+ * 
+ * @author Utente
+ */
 public class ConstraintParser extends DefaultHandler
 {
 	private int nrP;
@@ -79,17 +83,17 @@ public class ConstraintParser extends DefaultHandler
 		}
 		catch (SAXException se)
 		{
-			se.printStackTrace();
+			System.out.println("errore");
 			validDocument = false;
 		}
 		catch (ParserConfigurationException pce)
 		{
-			pce.printStackTrace();
+			System.out.println("errore");
 			validDocument = false;
 		}
 		catch (IOException ie)
 		{
-			ie.printStackTrace();
+			System.out.println("errore");
 			validDocument = false;
 		}
 		return validDocument;

@@ -10,6 +10,10 @@ import org.processmining.framework.connections.Connection;
 import org.processmining.framework.connections.ConnectionCannotBeObtained;
 import org.processmining.framework.connections.ConnectionID;
 
+/**
+ * 
+ * @author Utente
+ */
 public class ProMCResource extends ProMResource<ConnectionID> {
 
 	public ProMCResource(UIContext context, Action sourceAction, ResourceType resType, ConnectionID id,

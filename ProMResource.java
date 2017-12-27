@@ -15,8 +15,16 @@ import org.deckfour.uitopia.api.model.View;
 import org.processmining.contexts.uitopia.UIContext;
 import org.processmining.framework.ProMID;
 
+/**
+ * 
+ * @author Utente
+ * @param <I> 
+ */
 public abstract class ProMResource<I extends ProMID> implements Resource {
-
+        
+        /**
+         * 
+         */
 	public static interface Listener {
 		public void changed(ProMResource<?> resource, boolean fullUpdate);
 	}

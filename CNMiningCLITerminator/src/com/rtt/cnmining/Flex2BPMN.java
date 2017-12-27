@@ -5,6 +5,10 @@ import org.processmining.models.graphbased.directed.bpmn.BPMNDiagram;
 import org.processmining.plugins.converters.BPMNUtils;
 import org.processmining.plugins.converters.FlexToBPMNConverter;
 
+/**
+ * 
+ * @author Utente
+ */
 public class Flex2BPMN {
 
     public static BPMNDiagram convert(Flex model){

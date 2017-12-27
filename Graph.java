@@ -4,6 +4,10 @@ import com.carrotsearch.hppc.ObjectArrayList;
 import com.carrotsearch.hppc.ObjectObjectOpenHashMap;
 import com.carrotsearch.hppc.ObjectOpenHashSet;
 
+/**
+ * 
+ * @author Utente
+ */
 public class Graph
 {
 	private ObjectObjectOpenHashMap<Node, ObjectOpenHashSet<Node>> map = new ObjectObjectOpenHashMap<Node, ObjectOpenHashSet<Node>>();

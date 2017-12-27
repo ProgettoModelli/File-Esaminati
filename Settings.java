@@ -1,5 +1,9 @@
 package org.processmining.plugins.cnmining;
 
+/**
+ * 
+ * @author Utente
+ */
 public class Settings
 {
 	public String constraintsFilename = "";

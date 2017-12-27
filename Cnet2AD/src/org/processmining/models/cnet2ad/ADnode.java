@@ -1,5 +1,9 @@
 package org.processmining.models.cnet2ad;
 
+/**
+ * 
+ * @author Utente
+ */
 public class ADnode {
 
     public static final String JoinNode = "JoinNode";
@@ -28,7 +32,7 @@ public class ADnode {
         this.node();
     }
 
-    public void node(){
+    private void node(){
         this.type = Node;
     }
 
@@ -59,10 +63,8 @@ public class ADnode {
     public String toXMI(){
         return this.toXMI("", "");
     }
-
-    public String toXMI(String outcoming, String incoming){
-        StringBuilder str = new StringBuilder();
-
+    
+    public StringBuilder startToXMI(StringBuilder str){
         str.append("<node xmi:type=\"uml:");
         if(this.isType(FinalNode))
             str.append("ActivityFinalNode");
@@ -75,6 +77,13 @@ public class ADnode {
         else if(this.isType(BranchNode))
             str.append("DecisionNode");
         else str.append("OpaqueAction");
+        return str;
+    }
+
+    public String toXMI(String outcoming, String incoming){
+        StringBuilder str = new StringBuilder();
+        str = startToXMI(str);
+        
 
         str.append("\" xmi:id=\"");
         str.append(this.id);

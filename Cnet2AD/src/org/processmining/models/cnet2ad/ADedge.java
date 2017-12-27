@@ -1,5 +1,9 @@
 package org.processmining.models.cnet2ad;
 
+/**
+ * 
+ * @author Utente
+ */
 public class ADedge {
 
     private static int idCounter = 0;

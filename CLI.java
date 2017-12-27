@@ -23,6 +23,10 @@ import org.processmining.framework.util.AutoHelpCommandLineParser;
 import org.processmining.framework.util.CommandLineArgumentList;
 import org.processmining.framework.util.Pair;
 
+/**
+ * 
+ * @author Utente
+ */
 public class CLI {
 	@Plugin(name = "CLI", parameterLabels = {}, returnLabels = {}, returnTypes = {}, userAccessible = false)
 	@Bootable
@@ -48,7 +52,7 @@ public class CLI {
 				}
 			} catch (ScriptExecutionException e) {
 				System.err.println("Error while executing '"+commandlineArguments+"'");
-				System.err.println(e);
+				System.err.println("error");
 				throw e;
 			}
 		}
@@ -103,7 +107,7 @@ public class CLI {
 		try {
 			parser.parse(arguments.toStringArray());
 		} catch (CmdLineParser.OptionException e) {
-			System.err.println(e.getMessage());
+			System.err.println("");
 			parser.printUsage();
 			return null;
 		}
@@ -135,7 +139,7 @@ public class CLI {
 	}
 
 	public static String readFile(String scriptFile) throws IOException {
-		InputStream is = new FileInputStream(scriptFile);
+		InputStream is = new FileInputStream("");
 		String result = readWholeStream(is);
 		is.close();
 		return result;
@@ -150,8 +154,10 @@ public class CLI {
 		StringBuffer result = new StringBuffer();
 		int c;
 
-		while ((c = reader.read()) != -1) {
+		c = reader.read();
+		while (c != -1) {
 			result.append((char) c);
+			c = reader.read();
 		}
 		return result.toString();
 	}

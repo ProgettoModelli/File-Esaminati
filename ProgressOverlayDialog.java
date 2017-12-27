@@ -24,8 +24,15 @@ import org.processmining.framework.plugin.events.ProgressEventListener;
 import com.fluxicon.slickerbox.components.RoundedPanel;
 import com.fluxicon.slickerbox.components.SlickerProgressBar;
 
+/**
+ * 
+ * @author Utente
+ */
 public class ProgressOverlayDialog extends AbstractOverlayDialog implements ProgressEventListener {
-
+    
+        /**
+         * 
+         */
 	public static interface CancellationListener {
 		public void cancel();
 	}
@@ -121,7 +128,7 @@ public class ProgressOverlayDialog extends AbstractOverlayDialog implements Prog
 
 	}
 
-	protected JPanel alignLeft(JComponent component) {
+	private JPanel alignLeft(JComponent component) {
 		JPanel enclosure = new JPanel();
 		enclosure.setOpaque(false);
 		enclosure.setBorder(BorderFactory.createEmptyBorder());

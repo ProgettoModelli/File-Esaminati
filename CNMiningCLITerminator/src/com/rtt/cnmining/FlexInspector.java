@@ -6,6 +6,10 @@ import org.processmining.models.flexiblemodel.FlexNode;
 
 import java.util.ArrayList;
 
+/**
+ * 
+ * @author Utente
+ */
 public class FlexInspector {
 
     private Flex graph;

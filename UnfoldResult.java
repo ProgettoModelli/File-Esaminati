@@ -4,6 +4,10 @@ import com.carrotsearch.hppc.ObjectArrayList;
 import com.carrotsearch.hppc.ObjectIntOpenHashMap;
 import com.carrotsearch.hppc.ObjectObjectOpenHashMap;
 
+/**
+ * 
+ * @author Utente
+ */
 public class UnfoldResult {
 	public ObjectIntOpenHashMap<String> map;
 	public ObjectObjectOpenHashMap<String, ObjectArrayList<String>> attivita_tracce;	    

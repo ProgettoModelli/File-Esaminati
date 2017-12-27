@@ -13,6 +13,10 @@ import javax.swing.JPanel;
 import javax.swing.LayoutStyle;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+/**
+ * 
+ * @author Utente
+ */
 public class PannelloConstraints extends JPanel
 {
 	/**

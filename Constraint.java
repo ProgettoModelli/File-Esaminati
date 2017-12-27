@@ -3,6 +3,10 @@ package org.processmining.plugins.cnmining;
 import java.util.Collections;
 import java.util.LinkedList;
 
+/**
+ * 
+ * @author Utente
+ */
 public class Constraint
 {
 	private final LinkedList<String> head_list = new LinkedList<String>();

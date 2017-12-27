@@ -39,6 +39,27 @@ public class AllInclassMethodTests {
 	public List<Method> getAllTestMethods() {
 		return testMethods;
 	}
+        
+        public void cATMP1(boolean flag, URL[] defaultURLs, String libPath){
+            for (URL url : defaultURLs) {
+				if (Boot.VERBOSE == Level.ALL) {
+					System.out.println("Processing url: " + url);
+				}
+                                flag=metodoManutenzione(url,libPath);
+                                
+				if (!flag) {
+					if (Boot.VERBOSE == Level.ALL) {
+						System.out.println("Scanning for tests: " + url);
+					}
+					register(url);
+				} else {
+					if (Boot.VERBOSE == Level.ALL) {
+						System.out.println("Skipping: " + url.getFile() + " while scanning for tests.");
+					}
+				}
+			}
+            
+        }
 	
 	/**
 	 * Find all methods with annotation <code>@TestMethod</code> in the given
@@ -68,30 +89,28 @@ public class AllInclassMethodTests {
 			
 			File f = new File("." + File.separator + Boot.LIB_FOLDER);
 			String libPath = f.getCanonicalPath();
-	
-			for (URL url : defaultURLs) {
-				if (Boot.VERBOSE == Level.ALL) {
-					System.out.println("Processing url: " + url);
-				}
-				if (!(new File(url.toURI()).getCanonicalPath().startsWith(libPath))) {
-					if (Boot.VERBOSE == Level.ALL) {
-						System.out.println("Scanning for tests: " + url);
-					}
-					register(url);
-				} else {
-					if (Boot.VERBOSE == Level.ALL) {
-						System.out.println("Skipping: " + url.getFile() + " while scanning for tests.");
-					}
-				}
-			}
+                        boolean flag=false;
+                        cATMP1(flag, defaultURLs, libPath);
+			
 		} catch (MalformedURLException e) {
 			System.err.println(lookUpDir+" gives an invalid URL.\n"+e);
-		} catch (URISyntaxException e) {
-			System.err.println(lookUpDir+" gives an invalid URI.\n"+e);
 		} catch (IOException e) {
 			System.err.println("Could not read "+lookUpDir+"\n"+e);
 		}
 	}
+        
+        private boolean metodoManutenzione(URL url,String libPath){
+            boolean flag=false;
+            try {
+                flag=new File(url.toURI()).getCanonicalPath().startsWith(libPath);
+            }
+            catch (URISyntaxException e) {
+            
+            } catch (IOException e) {
+
+            }
+            return flag;
+        }
 	
 	private void register(URL url) {
 		if (url.getProtocol().equals(PluginManager.FILE_PROTOCOL)) {
@@ -108,7 +127,7 @@ public class AllInclassMethodTests {
 				}
 			} catch (URISyntaxException e) {
 				// fireError(url, e, null);
-				System.err.println(e);
+				System.err.println("error");
 			}
 		} else {
 			// scanUrl(url);
@@ -145,7 +164,7 @@ public class AllInclassMethodTests {
 			}
 		} catch (MalformedURLException e) {
 			//fireError(null, e, null);
-			System.err.println(e);
+			System.err.println("error");
 		}
 	}
 	
@@ -157,18 +176,20 @@ public class AllInclassMethodTests {
 			JarEntry je;
 			List<String> loadedClasses = new ArrayList<String>();
 
-			while ((je = jis.getNextJarEntry()) != null) {
+			je = jis.getNextJarEntry();
+			while (je  != null) {
 				if (!je.isDirectory() && je.getName().endsWith(PluginManager.CLASS_EXTENSION)) {
 					String loadedClass = loadClassFromFile(loader, url, je.getName());
 					loadedClasses.add(loadedClass);
 				}
+				je = jis.getNextJarEntry();
 			}
 			jis.close();
 			is.close();
 
 		} catch (IOException e) {
 			//fireError(url, e, null);
-			System.err.println(e);
+			System.err.println("error");
 		}
 	}
 
@@ -199,7 +220,16 @@ public class AllInclassMethodTests {
 				.replace(URL_SEPARATOR, PACKAGE_SEPARATOR).replace(File.separatorChar, PACKAGE_SEPARATOR));
 	}
 	
-
+        
+        public void lCP1(Class<?> pluginClass){
+            for (Method method : pluginClass.getMethods()) {
+				
+				if (method.isAnnotationPresent(TestMethod.class) && isGoodTest(method)) {
+					testMethods.add(method);
+				}
+			}
+        }
+        
 	/**
 	 * Returns the name of the class, if it is annotated, or if any of its
 	 * methods carries a plugin annotation!
@@ -209,6 +239,7 @@ public class AllInclassMethodTests {
 	 * @param className
 	 * @return
 	 */
+
 	private String loadClass(URLClassLoader loader, URL url, String className) {
 		boolean isAnnotated = false;
 
@@ -225,13 +256,8 @@ public class AllInclassMethodTests {
 				PluginDescriptorImpl pl = new PluginDescriptorImpl(pluginClass, pluginContextType);
 				addPlugin(pl);
 			}*/
-
-			for (Method method : pluginClass.getMethods()) {
-				
-				if (method.isAnnotationPresent(TestMethod.class) && isGoodTest(method)) {
-					testMethods.add(method);
-				}
-			}
+                        lCP1(pluginClass);
+			
 		} catch (Throwable t) {
 			// fireError(url, t, className);
 			if (Boot.VERBOSE != Level.NONE) {
@@ -243,47 +269,71 @@ public class AllInclassMethodTests {
 		}
 		return isAnnotated ? className : null;
 	}
-	
-	private boolean isGoodTest(Method method) {
-		
-		assert(method.isAnnotationPresent(TestMethod.class));
-		
-		// check annotations
-		if (!testExpectedFromFile(method) && !testExpectedFromOutputAnnotation(method)) {
+        
+        public boolean iGTP1(Method method){
+            if (!testExpectedFromFile(method) && !testExpectedFromOutputAnnotation(method)) {
 			if (Boot.VERBOSE != Level.NONE) {
 				System.err.println("Test " + method.toString() + " could not be loaded. "
 						+ "No expected test result specified.");
 			}
 			return false;
 		}
-
-		// check return type: must be String
-		if ((method.getModifiers() & Modifier.STATIC) == 0) {
+            return true;
+        }
+        
+        public boolean iGTP2(Method method){
+        if ((method.getModifiers() & Modifier.STATIC) == 0) {
 			if (Boot.VERBOSE != Level.NONE) {
 				System.err.println("Test " + method.toString() + " could not be loaded. "
 						+ "Test must be static.");
 			}
 			return false;
 		}
-
-		// check return type: must be String
-		if (!method.getReturnType().equals(String.class)) {
+        return true;
+        }
+        
+        public boolean iGTP3(Method method){
+            if (!method.getReturnType().equals(String.class)) {
 			if (Boot.VERBOSE != Level.NONE) {
 				System.err.println("Test " + method.toString() + " could not be loaded. "
 						+ "Return result must be java.lang.String");
 			}
 			return false;
 		}
-
-		// check parameter types: must be empty
-		Class<?>[] pars = method.getParameterTypes();
-		if (pars != null && pars.length > 0) {
+            return true;
+        }
+        
+        public boolean iGTP4(Method method, Class<?>[] pars){
+            if (pars != null && pars.length > 0) {
 			if (Boot.VERBOSE != Level.NONE) {
 				System.err.println("Test " + method.toString() + " could not be loaded. "
 						+ "A test must not take any parameters.");
 			}
 			return false;			
 		}
+            return true;
+        }
+	
+	private boolean isGoodTest(Method method) {
+		
+		assert(method.isAnnotationPresent(TestMethod.class));
+		
+		// check annotations
+                if(!iGTP1(method)) return false;
+		
+
+		// check return type: must be String
+                if(!iGTP2(method)) return false;
+		
+
+		// check return type: must be String
+                if(!iGTP3(method)) return false;
+		
+
+		// check parameter types: must be empty
+		Class<?>[] pars = method.getParameterTypes();
+                if(!iGTP4(method, pars)) return false;
+		
 		return true;
 	}
 

@@ -10,6 +10,10 @@ import org.deckfour.uitopia.ui.util.ImageLoader;
 import org.processmining.framework.annotations.AuthoredType;
 import org.processmining.framework.annotations.Icon;
 
+/**
+ * 
+ * @author Utente
+ */
 public class ProMResourceType implements ResourceType {
 
 	private final Class<?> type;
@@ -18,6 +22,13 @@ public class ProMResourceType implements ResourceType {
 	private String name;
 	private final static String DEFAULT_ICON = "resourcetype_model_30x35.png";
 
+        private Image pMRTP1(Image ic){
+            if (type.isAnnotationPresent(Icon.class)) {
+				ic = ImageLoader.load(type.getAnnotation(Icon.class).icon());
+			}
+            return ic;
+        }
+        
 	public ProMResourceType(Class<?> aType) {
 		type = aType;
 
@@ -84,10 +95,8 @@ public class ProMResourceType implements ResourceType {
 				};
 				name = type.getSimpleName();
 			}
-
-			if (type.isAnnotationPresent(Icon.class)) {
-				icon = ImageLoader.load(type.getAnnotation(Icon.class).icon());
-			}
+                        icon = pMRTP1(icon);
+			
 
 			/*
 			 * HV: No icon found yet. Use default.
@@ -124,8 +133,8 @@ public class ProMResourceType implements ResourceType {
 		return name;
 	}
 
-	public boolean isAssignableFrom(ResourceType type) {
-		return getTypeClass().isAssignableFrom(type.getTypeClass());
+	public boolean isAssignableFrom(ResourceType tipo) {
+		return getTypeClass().isAssignableFrom(tipo.getTypeClass());
 	}
 
 	public boolean equals(Object o) {

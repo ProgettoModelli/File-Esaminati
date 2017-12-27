@@ -1,5 +1,9 @@
 package org.processmining.plugins.cnmining;
 
+/**
+ * 
+ * @author Utente
+ */
 public class Edge
 {
 	private Node x;
@@ -19,6 +23,32 @@ public class Edge
 		this.flag = flag;
 	}
   
+        public boolean eP1(Edge other){
+            if (this.x == null)
+		{
+			if (other.x != null) {
+				return false;
+			}
+		}
+		else if (!this.x.equals(other.x)) {
+			return false;
+		}
+            return true;
+        }
+        
+        public boolean ep2(Edge other){
+            if (this.y == null)
+		{
+			if (other.y != null) {
+				return false;
+			}
+		}
+		else if (!this.y.equals(other.y)) {
+			return false;
+		}
+            return true;
+        }
+        
 	public boolean equals(Object obj)
 	{
 		if (this == obj) {
@@ -31,24 +61,11 @@ public class Edge
 			return false;
 		}
 		Edge other = (Edge)obj;
-		if (this.x == null)
-		{
-			if (other.x != null) {
-				return false;
-			}
-		}
-		else if (!this.x.equals(other.x)) {
-			return false;
-		}
-		if (this.y == null)
-		{
-			if (other.y != null) {
-				return false;
-			}
-		}
-		else if (!this.y.equals(other.y)) {
-			return false;
-		}
+                
+                if(!eP1(other)) return false;
+		
+                if(!ep2(other)) return false;
+		
 		return true;
 	}
   

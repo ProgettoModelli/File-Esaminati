@@ -55,806 +55,880 @@ import org.processmining.framework.providedobjects.ProvidedObjectDeletedExceptio
 import org.processmining.framework.providedobjects.ProvidedObjectID;
 import org.processmining.framework.providedobjects.ProvidedObjectManager;
 
+/**
+ * 
+ * @author Utente
+ */
 public class ProMResourceManager extends UpdateSignaller implements ResourceManager<ProMResource<?>>,
-		ProvidedObjectLifeCycleListener, PluginLifeCycleEventListener, ConnectionObjectListener {
+        ProvidedObjectLifeCycleListener, PluginLifeCycleEventListener, ConnectionObjectListener {
 
-	private static final String LASTIMPORTFILE = "last import file location";
+    private static final String LASTIMPORTFILE = "last import file location";
 
-	private static final String LASTEXPORTFILE = "last export file location";
+    private static final String LASTEXPORTFILE = "last export file location";
 
-	private static final String FAVORITEIMPORT = "favorite import for type ";
+    private static final String FAVORITEIMPORT = "favorite import for type ";
 
-	private static final String FAVORITEEXPORT = "favorite export for type ";
+    private static final String FAVORITEEXPORT = "favorite export for type ";
 
-	private static ProMResourceManager instance = null;
+    private static ProMResourceManager instance = null;
 
-	private final Map<Class<?>, ProMResourceType> resourceClasses = new ConcurrentHashMap<Class<?>, ProMResourceType>();
-	private final Map<ProMID, ProMResource<?>> resources = new ConcurrentHashMap<ProMID, ProMResource<?>>();
+    private final Map<Class<?>, ProMResourceType> resourceClasses = new ConcurrentHashMap<Class<?>, ProMResourceType>();
+    private final Map<ProMID, ProMResource<?>> resources = new ConcurrentHashMap<ProMID, ProMResource<?>>();
 
-	private final UIContext context;
+    private final UIContext context;
 
-	private Map<FileFilter, PluginParameterBinding> importplugins;
+    private Map<FileFilter, PluginParameterBinding> importplugins;
 
-	private final ProvidedObjectManager poManager;
+    private final ProvidedObjectManager poManager;
 
-	// HV Remember last file imported and exported.
-	private File lastImportedFile;
-	private File lastExportedFile;
+    // HV Remember last file imported and exported.
+    private File lastImportedFile;
+    private File lastExportedFile;
 
-	private Boolean importPluginAdded = true;
+    private Boolean importPluginAdded = true;
 
-	private final Preferences preferences;
+    private final Preferences preferences;
 
-	private ConnectionManager connectionManager;
+    private ConnectionManager connectionManager;
+    private void pMRMP1(UIContext context){
+        for (Class<?> type : context.getPluginManager().getKnownObjectTypes()) {
+            addType(type);
+        }
+    }
+    private ProMResourceManager(UIContext context) {
 
-	private ProMResourceManager(UIContext context) {
+        this.context = context;
+        pMRMP1(context);
+        
+        for (Class<?> type : context.getPluginManager().getKnownClassesAnnotatedWith(ConnectionAnnotation.class)) {
+            addType(type);
+        }
+        poManager = context.getProvidedObjectManager();
+        poManager.getProvidedObjectLifeCylceListeners().add(this);
 
-		this.context = context;
-		for (Class<?> type : context.getPluginManager().getKnownObjectTypes()) {
-			addType(type);
-		}
-		for (Class<?> type : context.getPluginManager().getKnownClassesAnnotatedWith(ConnectionAnnotation.class)) {
-			addType(type);
-		}
-		poManager = context.getProvidedObjectManager();
-		poManager.getProvidedObjectLifeCylceListeners().add(this);
+        connectionManager = context.getConnectionManager();
+        connectionManager.getConnectionListeners().add(this);
 
-		connectionManager = context.getConnectionManager();
-		connectionManager.getConnectionListeners().add(this);
+        // HV No last file imported or exported yet.
+        preferences = Preferences.userNodeForPackage(getClass());
 
-		// HV No last file imported or exported yet.
-		preferences = Preferences.userNodeForPackage(getClass());
+        String name = preferences.get(LASTIMPORTFILE, null);
+        lastImportedFile = name == null ? null : new File(name);
+        boolean lImpFExists = lastImportedFile.exists();
+        while (lastImportedFile != null && !lImpFExists) {
+            lastImportedFile = lastImportedFile.getParentFile();
+            lImpFExists = lastImportedFile.exists();
+        }
+        name = preferences.get(LASTEXPORTFILE, null);
+        lastExportedFile = name == null ? null : new File(name);
+        boolean lExpFExists = lastExportedFile.exists();
+        while (lastExportedFile != null && !lExpFExists) {
+            lastExportedFile = lastExportedFile.getParentFile();
+            lExpFExists = lastExportedFile.exists();
+        }
+    }
 
-		String name = preferences.get(LASTIMPORTFILE, null);
-		lastImportedFile = name == null ? null : new File(name);
-		while (lastImportedFile != null && !lastImportedFile.exists()) {
-			lastImportedFile = lastImportedFile.getParentFile();
-		}
-		name = preferences.get(LASTEXPORTFILE, null);
-		lastExportedFile = name == null ? null : new File(name);
-		while (lastExportedFile != null && !lastExportedFile.exists()) {
-			lastExportedFile = lastExportedFile.getParentFile();
-		}
-	}
+    public ResourceType addType(Class<?> type) {
+        return resourceClasses.put(type, new ProMResourceType(type));
+    }
 
-	public ResourceType addType(Class<?> type) {
-		return resourceClasses.put(type, new ProMResourceType(type));
-	}
+    public static ProMResourceManager initialize(UIContext contesto) {
+        if (instance == null) {
+            instance = new ProMResourceManager(contesto);
+        }
+        return instance;
+    }
 
-	public static ProMResourceManager initialize(UIContext context) {
-		if (instance == null) {
-			instance = new ProMResourceManager(context);
-		}
-		return instance;
-	}
+    /*
+     * HV: Return a default exporter for known types. Fortunately, this handling
+     * of favorite is all String based, so we do not need to know the actual
+     * types (only their names).
+     */
+    private String getDefaultExport(String typeName) {
+        // The typeName matches whatever the ProM workspace shows in the second line of an object (basically, this is the class name). 
+        // The returned label should match with whatever is in the @UIExportPlugin declaration.
+        if (typeName.equals("XLog")) {
+            return "XES files";
+        } else if (typeName.equals("Petrinet")) {
+            return "PNML files";
+        } else if (typeName.equals("AcceptingPetriNet")) {
+            return "Accepting Petri Net";
+        } else if (typeName.equals("PetriNetWithData")) {
+            // Particularly useful, as this may prevent novice users from using the usual PNML export, which does not export data.
+            return "Data-aware PNML files";
+        }
+        return "";
+    }
 
-	/*
-	 * HV: Return a default exporter for known types. Fortunately, this handling
-	 * of favorite is all String based, so we do not need to know the actual
-	 * types (only their names).
-	 */
-	private String getDefaultExport(String typeName) {
-		// The typeName matches whatever the ProM workspace shows in the second line of an object (basically, this is the class name). 
-		// The returned label should match with whatever is in the @UIExportPlugin declaration.
-		if (typeName.equals("XLog")) {
-			return "XES files";
-		} else if (typeName.equals("Petrinet")) {
-			return "PNML files";
-		} else if (typeName.equals("AcceptingPetriNet")) {
-			return "Accepting Petri Net";
-		} else if (typeName.equals("PetriNetWithData")) {
-			// Particularly useful, as this may prevent novice users from using the usual PNML export, which does not export data.
-			return "Data-aware PNML files";
-		}
-		return "";
-	}
+    public Collection<FileFilter> getExportFilters(Resource resource) {
+        Collection<FileFilter> exportfilters = new HashSet<FileFilter>();
+        Set<PluginParameterBinding> potentialExportPlugins = context.getPluginManager().getPluginsAcceptingInAnyOrder(
+                UIPluginContext.class, true, File.class, resource.getType().getTypeClass());
 
-	public Collection<FileFilter> getExportFilters(Resource resource) {
-		Collection<FileFilter> exportfilters = new HashSet<FileFilter>();
-		Set<PluginParameterBinding> potentialExportPlugins = context.getPluginManager().getPluginsAcceptingInAnyOrder(
-				UIPluginContext.class, true, File.class, resource.getType().getTypeClass());
+        for (PluginParameterBinding binding : potentialExportPlugins) {
+            if (binding.getPlugin().getAnnotation(UIExportPlugin.class) != null) {
+                String description = binding.getPlugin().getAnnotation(UIExportPlugin.class).description();
+                String extension = binding.getPlugin().getAnnotation(UIExportPlugin.class).extension();
+                FileNameExtensionFilter filter = new FileNameExtensionFilter(description, extension);
+                exportfilters.add(filter);
+            }
+        }
+        return exportfilters;
+    }
 
-		for (PluginParameterBinding binding : potentialExportPlugins) {
-			if (binding.getPlugin().getAnnotation(UIExportPlugin.class) != null) {
-				String description = binding.getPlugin().getAnnotation(UIExportPlugin.class).description();
-				String extension = binding.getPlugin().getAnnotation(UIExportPlugin.class).extension();
-				FileNameExtensionFilter filter = new FileNameExtensionFilter(description, extension);
-				exportfilters.add(filter);
-			}
-		}
-		return exportfilters;
-	}
+    private File metodoManutenzione1(String name){
+        return new File(name);
+    }
+    
+    public void eRP1(Set<PluginParameterBinding> potentialExportPlugins, Map<FileFilter, PluginParameterBinding> exportplugins, String lastChosenExportPlugin, FileFilter lastChosenFilter){
+        for (PluginParameterBinding binding : potentialExportPlugins) {
+            if (binding.getPlugin().getAnnotation(UIExportPlugin.class) != null) {
+                String description = binding.getPlugin().getAnnotation(UIExportPlugin.class).description();
+                String extension = binding.getPlugin().getAnnotation(UIExportPlugin.class).extension();
+                FileNameExtensionFilter filter = new FileNameExtensionFilter(description, extension);
+                exportplugins.put(filter, binding);
+                if (description.equals(lastChosenExportPlugin)) {
+                    lastChosenFilter = filter;
+                }
+            }
+        }
+    }
+    
+    public boolean eRP2(File file, boolean flag){
+        if (!file.createNewFile()) {
+                    int ow = JOptionPane.showConfirmDialog(context.getUI(),
+                            "Are you sure you want to overwrite " + file.getName(), "Confirm overwrite",
+                            JOptionPane.YES_NO_OPTION);
+                    if (ow == JOptionPane.NO_OPTION) {
 
-	public boolean exportResource(Resource resource) throws IOException {
-		assert(resource instanceof ProMResource<?>);
+                    } else {
+                        flag = false;
+                    }
+                }
+        return flag;
+    }
+    
+    public boolean eRP3(Resource resource, boolean flag, File file, FileNameExtensionFilter selectedFilter, Map<FileFilter, PluginParameterBinding> exportplugins){
+        if (flag) {
+                    // HV Remember last file exported (and imported if not initialized yet).
+                    lastExportedFile = file.getParentFile();
+                    preferences.put(LASTEXPORTFILE, lastExportedFile.getAbsolutePath());
+                    if (lastImportedFile == null) {
+                        lastImportedFile = lastExportedFile;
+                        preferences.put(LASTIMPORTFILE, lastImportedFile.getAbsolutePath());
+                    }
 
-		String lastChosenExportPlugin = preferences.get(FAVORITEEXPORT + resource.getType().getTypeName(), "");
-		if (lastChosenExportPlugin.isEmpty()) {
-			// HV: No favorite set yet by user. Use reasonable default values for known types.
-			lastChosenExportPlugin = getDefaultExport(resource.getType().getTypeName());
-		}
-		FileFilter lastChosenFilter = null;
+                    PluginParameterBinding binding = exportplugins.get(selectedFilter);
 
-		Map<FileFilter, PluginParameterBinding> exportplugins = new TreeMap<FileFilter, PluginParameterBinding>(
-				new Comparator<FileFilter>() {
+                    preferences.put(FAVORITEEXPORT + resource.getType().getTypeName(),
+                            binding.getPlugin().getAnnotation(UIExportPlugin.class).description());
 
-					public int compare(FileFilter f1, FileFilter f2) {
-						return f1.getDescription().toLowerCase().compareTo(f2.getDescription().toLowerCase());
-					}
-				});
-		Set<PluginParameterBinding> potentialExportPlugins = context.getPluginManager().getPluginsAcceptingInAnyOrder(
-				UIPluginContext.class, true, File.class, resource.getType().getTypeClass());
+                    UIPluginContext importContext = context.getMainPluginContext()
+                            .createChildContext("Saving file with " + binding.getPlugin().getName());
 
-		for (PluginParameterBinding binding : potentialExportPlugins) {
-			if (binding.getPlugin().getAnnotation(UIExportPlugin.class) != null) {
-				String description = binding.getPlugin().getAnnotation(UIExportPlugin.class).description();
-				String extension = binding.getPlugin().getAnnotation(UIExportPlugin.class).extension();
-				FileNameExtensionFilter filter = new FileNameExtensionFilter(description, extension);
-				exportplugins.put(filter, binding);
-				if (description.equals(lastChosenExportPlugin)) {
-					lastChosenFilter = filter;
-				}
-			}
-		}
+                    PluginExecutionResult result = binding.invoke(importContext, file,
+                            ((ProMResource<?>) resource).getInstance());
+                    context.getProvidedObjectManager().createProvidedObjects(importContext);
 
-		// HV Start at location last file was exported.
-		JFileChooser fc = (lastExportedFile != null ? new JFileChooser(lastExportedFile) : new JFileChooser());
-		for (FileFilter filter : exportplugins.keySet()) {
-			fc.addChoosableFileFilter(filter);
-		}
-		fc.setAcceptAllFileFilterUsed(false);
-		if (lastChosenFilter != null) {
-			fc.setFileFilter(lastChosenFilter);
-		}
+                    try {
+                        result.synchronize();
+                    } catch (CancellationException e) {
+                        context.getMainPluginContext().log("Export of " + file + " cancelled.");
+                        return false;
+                    } catch (Exception e) {
+                        JOptionPane.showMessageDialog(context.getUI(),
+                                "<html>Error with export of " + file + ":<br>" + e.getMessage() + "</html>",
+                                "Error while exporting", JOptionPane.ERROR_MESSAGE);
+                        return false;
+                    } finally {
+                        importContext.getParentContext().deleteChild(importContext);
+                    }
+                    return true;
+                }
+        return false;
+    }
+    
+    public boolean eRP4(Resource resource, boolean flag, JFileChooser fc, Map<FileFilter, PluginParameterBinding> exportplugins){
+         while (flag) {
+            int returnVal = fc.showSaveDialog(context.getUI());
+            
+            if ((returnVal == JFileChooser.APPROVE_OPTION) && (fc.getSelectedFile() != null)) {
+                File file = fc.getSelectedFile();
+                FileNameExtensionFilter selectedFilter = (FileNameExtensionFilter) fc.getFileFilter();
+                if (selectedFilter == null) {
+                    selectedFilter = (FileNameExtensionFilter) exportplugins.keySet().iterator().next();
+                }
 
-		askForFile: while (true) {
-			int returnVal = fc.showSaveDialog(context.getUI());
+                String postfix = "." + selectedFilter.getExtensions()[0];
+                if (!file.getAbsolutePath().endsWith(postfix)) {
+                    String name = file.getAbsolutePath() + postfix;
+                    file = metodoManutenzione1(name);
+                }
+                flag = eRP2(file, flag);
+                if(eRP3(resource,flag, file, selectedFilter, exportplugins)) return true;
+                
 
-			if ((returnVal == JFileChooser.APPROVE_OPTION) && (fc.getSelectedFile() != null)) {
-				File file = fc.getSelectedFile();
-				FileNameExtensionFilter selectedFilter = (FileNameExtensionFilter) fc.getFileFilter();
-				if (selectedFilter == null) {
-					selectedFilter = (FileNameExtensionFilter) exportplugins.keySet().iterator().next();
-				}
+                return false;
+            }
+        }
+         return false;
+    }
+    
+    public boolean exportResource(Resource resource) throws IOException {
+        assert (resource instanceof ProMResource<?>);
 
-				String postfix = "." + selectedFilter.getExtensions()[0];
-				if (!file.getAbsolutePath().endsWith(postfix)) {
-					String name = file.getAbsolutePath() + postfix;
-					file = new File(name);
-				}
-				if (!file.createNewFile()) {
-					int ow = JOptionPane.showConfirmDialog(context.getUI(),
-							"Are you sure you want to overwrite " + file.getName(), "Confirm overwrite",
-							JOptionPane.YES_NO_OPTION);
-					if (ow == JOptionPane.NO_OPTION) {
-						continue askForFile;
-					}
-				}
+        String lastChosenExportPlugin = preferences.get(FAVORITEEXPORT + resource.getType().getTypeName(), "");
+        if (lastChosenExportPlugin.isEmpty()) {
+            // HV: No favorite set yet by user. Use reasonable default values for known types.
+            lastChosenExportPlugin = getDefaultExport(resource.getType().getTypeName());
+        }
+        FileFilter lastChosenFilter = null;
 
-				// HV Remember last file exported (and imported if not initialized yet).
-				lastExportedFile = file.getParentFile();
-				preferences.put(LASTEXPORTFILE, lastExportedFile.getAbsolutePath());
-				if (lastImportedFile == null) {
-					lastImportedFile = lastExportedFile;
-					preferences.put(LASTIMPORTFILE, lastImportedFile.getAbsolutePath());
-				}
+        Map<FileFilter, PluginParameterBinding> exportplugins = new TreeMap<FileFilter, PluginParameterBinding>(
+                new Comparator<FileFilter>() {
 
-				PluginParameterBinding binding = exportplugins.get(selectedFilter);
+                    public int compare(FileFilter f1, FileFilter f2) {
+                        return f1.getDescription().toLowerCase().compareTo(f2.getDescription().toLowerCase());
+                    }
+                });
+        Set<PluginParameterBinding> potentialExportPlugins = context.getPluginManager().getPluginsAcceptingInAnyOrder(
+                UIPluginContext.class, true, File.class, resource.getType().getTypeClass());
+        eRP1(potentialExportPlugins, exportplugins, lastChosenExportPlugin, lastChosenFilter);
+        
 
-				preferences.put(FAVORITEEXPORT + resource.getType().getTypeName(),
-						binding.getPlugin().getAnnotation(UIExportPlugin.class).description());
+        // HV Start at location last file was exported.
+        JFileChooser fc = (lastExportedFile != null ? new JFileChooser(lastExportedFile) : new JFileChooser());
+        for (FileFilter filter : exportplugins.keySet()) {
+            fc.addChoosableFileFilter(filter);
+        }
+        fc.setAcceptAllFileFilterUsed(false);
+        if (lastChosenFilter != null) {
+            fc.setFileFilter(lastChosenFilter);
+        }
+        boolean flag = true;
+        if(eRP4(resource, flag, fc, exportplugins)) return true; else return false;
+       
+       
+    }
 
-				UIPluginContext importContext = context.getMainPluginContext()
-						.createChildContext("Saving file with " + binding.getPlugin().getName());
+    public java.util.List<ProMResource<?>> getAllResources() {
+        return new ArrayList<ProMResource<?>>(resources.values());
+    }
 
-				PluginExecutionResult result = binding.invoke(importContext, file,
-						((ProMResource<?>) resource).getInstance());
-				context.getProvidedObjectManager().createProvidedObjects(importContext);
+    public java.util.List<ProMResource<?>> getAllResources(ResourceFilter filter) {
+        return filterList(getAllResources(), filter);
+    }
 
-				try {
-					result.synchronize();
-				} catch (CancellationException e) {
-					context.getMainPluginContext().log("Export of " + file + " cancelled.");
-					return false;
-				} catch (Exception e) {
-					JOptionPane.showMessageDialog(context.getUI(),
-							"<html>Error with export of " + file + ":<br>" + e.getMessage() + "</html>",
-							"Error while exporting", JOptionPane.ERROR_MESSAGE);
-					return false;
-				} finally {
-					importContext.getParentContext().deleteChild(importContext);
-				}
-				return true;
-			}
+    public java.util.List<ResourceType> getAllSupportedResourceTypes() {
+        java.util.List<ResourceType> types = new ArrayList<ResourceType>();
+        types.addAll(resourceClasses.values());
+        return types;
+    }
 
-			return false;
-		}
-	}
+    public java.util.List<ProMResource<?>> getChildrenOf(final Resource parent) {
+        return getAllResources(new ResourceFilter() {
+            public boolean accept(Resource res) {
+                return getParentsOf(res).contains(parent);
+            }
+        });
+    }
 
-	public java.util.List<ProMResource<?>> getAllResources() {
-		return new ArrayList<ProMResource<?>>(resources.values());
-	}
+    public java.util.List<ProMResource<?>> getChildrenOf(final Resource parent, final ResourceFilter filter) {
+        return getAllResources(new ResourceFilter() {
+            public boolean accept(Resource res) {
+                return filter.accept(res) && getParentsOf(res).contains(parent);
+            }
+        });
+    }
 
-	public java.util.List<ProMResource<?>> getAllResources(ResourceFilter filter) {
-		return filterList(getAllResources(), filter);
-	}
+    public java.util.List<ProMResource<?>> getFavoriteResources() {
+        return getAllResources(new ResourceFilter() {
+            public boolean accept(Resource res) {
+                return res.isFavorite();
+            }
+        });
+    }
 
-	public java.util.List<ResourceType> getAllSupportedResourceTypes() {
-		java.util.List<ResourceType> types = new ArrayList<ResourceType>();
-		types.addAll(resourceClasses.values());
-		return types;
-	}
+    public java.util.List<ProMResource<?>> getFavoriteResources(final ResourceFilter filter) {
+        return getAllResources(new ResourceFilter() {
+            public boolean accept(Resource res) {
+                return filter.accept(res) && res.isFavorite();
+            }
+        });
+    }
 
-	public java.util.List<ProMResource<?>> getChildrenOf(final Resource parent) {
-		return getAllResources(new ResourceFilter() {
-			public boolean accept(Resource res) {
-				return getParentsOf(res).contains(parent);
-			}
-		});
-	}
+    public java.util.List<ProMResource<?>> getImportedResources() {
+        return getAllResources(new ResourceFilter() {
+            public boolean accept(Resource res) {
+                return getParentsOf(res).isEmpty();
+            }
+        });
+    }
 
-	public java.util.List<ProMResource<?>> getChildrenOf(final Resource parent, final ResourceFilter filter) {
-		return getAllResources(new ResourceFilter() {
-			public boolean accept(Resource res) {
-				return filter.accept(res) && getParentsOf(res).contains(parent);
-			}
-		});
-	}
+    public java.util.List<ProMResource<?>> getImportedResources(final ResourceFilter filter) {
+        return getAllResources(new ResourceFilter() {
+            public boolean accept(Resource res) {
+                return filter.accept(res) && getParentsOf(res).isEmpty();
+            }
+        });
+    }
 
-	public java.util.List<ProMResource<?>> getFavoriteResources() {
-		return getAllResources(new ResourceFilter() {
-			public boolean accept(Resource res) {
-				return res.isFavorite();
-			}
-		});
-	}
+    public java.util.List<ProMResource<?>> getParentsOf(Resource child) {
+        return new ArrayList<ProMResource<?>>(((ProMResource<?>) child).getParents());
+    }
 
-	public java.util.List<ProMResource<?>> getFavoriteResources(final ResourceFilter filter) {
-		return getAllResources(new ResourceFilter() {
-			public boolean accept(Resource res) {
-				return filter.accept(res) && res.isFavorite();
-			}
-		});
-	}
+    public java.util.List<ProMResource<?>> getParentsOf(Resource child, ResourceFilter filter) {
+        java.util.List<ProMResource<?>> filtered = new ArrayList<ProMResource<?>>(
+                ((ProMResource<?>) child).getParents());
+        return filterList(filtered, filter);
+    }
 
-	public java.util.List<ProMResource<?>> getImportedResources() {
-		return getAllResources(new ResourceFilter() {
-			public boolean accept(Resource res) {
-				return getParentsOf(res).isEmpty();
-			}
-		});
-	}
+    /**
+     * Start the import dialog for a resource. Can be called from the EDT or any
+     * other thread. Makes sure that the dialog-part of the actual import is run
+     * in the EDT.
+     */
+    public boolean importResource() {
+        if (EventQueue.isDispatchThread()) {
+            /*
+             * Called from the EDT. OK.
+             */
+            importResourceInEDT();
+        } else {
+            /*
+             * Not called from the EDT. Have the EDT take care of it.
+             */
+            try {
+                SwingUtilities.invokeAndWait(new Runnable() {
+                    public void run() {
+                        importResourceInEDT();
+                    }
+                });
+            } catch (InvocationTargetException e) {
+                // TODO Auto-generated catch block
+                System.out.println("errore");
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                System.out.println("errore");
+            }
+        }
+        return true;
+    }
 
-	public java.util.List<ProMResource<?>> getImportedResources(final ResourceFilter filter) {
-		return getAllResources(new ResourceFilter() {
-			public boolean accept(Resource res) {
-				return filter.accept(res) && getParentsOf(res).isEmpty();
-			}
-		});
-	}
+    /*
+     * This method should only be called from the EDT thread.
+     */
+    private synchronized boolean importResourceInEDT() {
+        if (!EventQueue.isDispatchThread()) {
+            System.err.println("Method should only be called from EDT");
+            return false;
+        }
+        synchronized (importPluginAdded) {
+            if (importPluginAdded) {
+                buildImportPlugins();
+                importPluginAdded = false;
+            }
+        }
+        // HV Start from the location of the last file imported.
+        final JFileChooser fc = (lastImportedFile != null ? new JFileChooser(lastImportedFile) : new JFileChooser());
+        for (FileFilter filter : importplugins.keySet()) {
+            fc.addChoosableFileFilter(filter);
+        }
+        fc.setAcceptAllFileFilterUsed(true);
+        /*
+         * Disable multi-selection, as this allows for the user to select two
+         * files simultaneously that cannot be handled by a single importer. The
+         * user can only use one importer...
+         */
+        fc.setMultiSelectionEnabled(true);
+        fc.setFileFilter(fc.getAcceptAllFileFilter());
 
-	public java.util.List<ProMResource<?>> getParentsOf(Resource child) {
-		return new ArrayList<ProMResource<?>>(((ProMResource<?>) child).getParents());
-	}
+        /*
+         * HV: This method does run in the EDT. 
+         */
+        int returnVal = fc.showOpenDialog(context.getUI());
 
-	public java.util.List<ProMResource<?>> getParentsOf(Resource child, ResourceFilter filter) {
-		java.util.List<ProMResource<?>> filtered = new ArrayList<ProMResource<?>>(
-				((ProMResource<?>) child).getParents());
-		return filterList(filtered, filter);
-	}
-
-	/**
-	 * Start the import dialog for a resource. Can be called from the EDT or any
-	 * other thread. Makes sure that the dialog-part of the actual import is run in the EDT.
-	 */
-	public boolean importResource() {
-		if (EventQueue.isDispatchThread()) {
-			/*
-			 * Called from the EDT. OK.
-			 */
-			importResourceInEDT();
-		} else {
-			/*
-			 * Not called from the EDT. Have the EDT take care of it.
-			 */
-			try {
-				SwingUtilities.invokeAndWait(new Runnable() {
-					public void run() {
-						importResourceInEDT();
-					}
-				});
-			} catch (InvocationTargetException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		return true;
-	}
-
-	/*
-	 * This method should only be called from the EDT thread.
-	 */
-	private synchronized boolean importResourceInEDT() {
-		if (!EventQueue.isDispatchThread()) {
-			System.err.println("Method should only be called from EDT");
-			return false;
-		}
-		synchronized (importPluginAdded) {
-			if (importPluginAdded) {
-				buildImportPlugins();
-				importPluginAdded = false;
-			}
-		}
-		// HV Start from the location of the last file imported.
-		final JFileChooser fc = (lastImportedFile != null ? new JFileChooser(lastImportedFile) : new JFileChooser());
-		for (FileFilter filter : importplugins.keySet()) {
-			fc.addChoosableFileFilter(filter);
-		}
-		fc.setAcceptAllFileFilterUsed(true);
-		/*
-		 * Disable multi-selection, as this allows for the user to select two
-		 * files simultaneously that cannot be handled by a single importer. The
-		 * user can only use one importer...
-		 */
-		fc.setMultiSelectionEnabled(true);
-		fc.setFileFilter(fc.getAcceptAllFileFilter());
-
-		/*
-		 * HV: This method does run in the EDT. 
-		 */
-		int returnVal = fc.showOpenDialog(context.getUI());
-
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			/*
-			 * As a result of disabling the multi-selection, use a different way
-			 * to get the selected file(s).
-			 */
-			File[] files = fc.getSelectedFiles();
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            /*
+             * As a result of disabling the multi-selection, use a different way
+             * to get the selected file(s).
+             */
+            File[] files = fc.getSelectedFiles();
 			//			File[] files = new File[]{ fc.getSelectedFile() };
 
-			// XL: parse file one for one
-			boolean importedSuccessfully = true;
-			for (final File f : files) {
-				PluginParameterBinding binding = importplugins.get(fc.getFileFilter());
-				importedSuccessfully &= importResourceInEDT(binding, f);
-			}
-			return importedSuccessfully;
+            // XL: parse file one for one
+            boolean importedSuccessfully = true;
+            for (final File f : files) {
+                PluginParameterBinding binding = importplugins.get(fc.getFileFilter());
+                importedSuccessfully &= metodoChiamata(binding, f);
+            }
+            return importedSuccessfully;
 
-		} else {
-			return false;
+        } else {
+            return false;
 
-		}
-	}
+        }
+    }
+    
+    private boolean metodoChiamata(PluginParameterBinding binding, final File... f){
+        boolean flag=importResourceInEDT(binding, f);
+        return flag;
+    }
 
-	/**
-	 * Can be called from the EDT or any other thread.
-	 */
-	public synchronized boolean importResources(File... files) {
-		return importResource(null, files);
-	}
+    /**
+     * Can be called from the EDT or any other thread.
+     */
+    public synchronized boolean importResources(File... files) {
+        return importResource(null, files);
+    }
 
-	/**
-	 * Can be called from the EDT or any other thread. Makes sure that the
-	 * dialog-par tof the actual import is run in the EDT.
-	 */
-	public boolean importResource(final PluginParameterBinding binding, final File... files) {
-		if (EventQueue.isDispatchThread()) {
-			/*
-			 * Called from the EDT. OK.
-			 */
-			importResourceInEDT(binding, files);
-		} else {
-			/*
-			 * Not called from the EDT. Have the EDZT take care of it.
-			 */
-			try {
-				SwingUtilities.invokeAndWait(new Runnable() {
-					public void run() {
-						importResourceInEDT(binding, files);
-					}
-				});
-			} catch (InvocationTargetException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		return true;
-	}
+    /**
+     * Can be called from the EDT or any other thread. Makes sure that the
+     * dialog-par tof the actual import is run in the EDT.
+     */
+    public boolean importResource(final PluginParameterBinding binding, final File... files) {
+        if (EventQueue.isDispatchThread()) {
+            /*
+             * Called from the EDT. OK.
+             */
+            importResourceInEDT(binding, files);
+        } else {
+            /*
+             * Not called from the EDT. Have the EDZT take care of it.
+             */
+            try {
+                SwingUtilities.invokeAndWait(new Runnable() {
+                    public void run() {
+                        importResourceInEDT(binding, files);
+                    }
+                });
+            } catch (InvocationTargetException e) {
+                // TODO Auto-generated catch block
+                System.out.println("errore");
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                System.out.println("errore");
+            }
+        }
+        return true;
+    }
+    
+    private void iRIEDTP1(Map<String, PluginParameterBinding> bindings, File... files){
+        for (FileFilter filter : importplugins.keySet()) {
+                // HV: Only show plug-ins that can handle all files, as all files will be imported by it.
+                boolean ok = true;
+                for (File file : files) {
+                    if (!filter.accept(file)) {
+                        ok = false;
+                    }
+                }
+                if (ok) {
+                    bindings.put(filter.getDescription(), importplugins.get(filter));
+                }
+            }
+    }
+    
+    private void iRIEDTP2(Map<String, PluginParameterBinding> bindings){
+        if (bindings.size() == 0) {
+                // 	TODO: No plugins available based on filetype
+                // 	show all plugins
+                for (FileFilter filter : importplugins.keySet()) {
+                    bindings.put(filter.getDescription(), importplugins.get(filter));
+                }
+            }
+    }
+    
+    private void iRIEDTP3(){
+        if (importPluginAdded) {
+                buildImportPlugins();
+                importPluginAdded = false;
+            }
+    }
+    
+    private void iRIEDTP4(){
+        if (lastExportedFile == null) {
+            lastExportedFile = lastImportedFile;
+            preferences.put(LASTEXPORTFILE, lastExportedFile.getAbsolutePath());
+        }
+    }
 
-	/*
-	 * This method should be called from the EDT.
-	 */
-	private synchronized boolean importResourceInEDT(PluginParameterBinding binding, final File... files) {
-		if (!EventQueue.isDispatchThread()) {
-			System.err.println("Method should only be called from EDT");
-			return false;
-		}
-		synchronized (importPluginAdded) {
-			if (importPluginAdded) {
-				buildImportPlugins();
-				importPluginAdded = false;
-			}
-		}
+    /*
+     * This method should be called from the EDT.
+     */
+    private synchronized boolean importResourceInEDT(PluginParameterBinding binding, final File... files) {
+        if (!EventQueue.isDispatchThread()) {
+            System.err.println("Method should only be called from EDT");
+            return false;
+        }
+        synchronized (importPluginAdded) {
+            iRIEDTP3();
+            
+        }
 
-		// HV Remember the location of the last file imported (and exported if not initialized yet).
-		lastImportedFile = files[0].getParentFile();
-		preferences.put(LASTIMPORTFILE, lastImportedFile.getAbsolutePath());
-		if (lastExportedFile == null) {
-			lastExportedFile = lastImportedFile;
-			preferences.put(LASTEXPORTFILE, lastExportedFile.getAbsolutePath());
-		}
+        // HV Remember the location of the last file imported (and exported if not initialized yet).
+        lastImportedFile = files[0].getParentFile();
+        preferences.put(LASTIMPORTFILE, lastImportedFile.getAbsolutePath());
+        iRIEDTP4();
+        
 
-		if (binding == null) {
-			// user chose the "all files" option
-			Map<String, PluginParameterBinding> bindings = new HashMap<String, PluginParameterBinding>();
-			for (FileFilter filter : importplugins.keySet()) {
-				// HV: Only show plug-ins that can handle all files, as all files will be imported by it.
-				boolean ok = true;
-				for (File file : files) {
-					if (!filter.accept(file)) {
-						ok = false;
-					}
-				}
-				if (ok) {
-					bindings.put(filter.getDescription(), importplugins.get(filter));
-				}
-			}
-			if (bindings.size() == 0) {
-				// 	TODO: No plugins available based on filetype
-				// 	show all plugins
-				for (FileFilter filter : importplugins.keySet()) {
-					bindings.put(filter.getDescription(), importplugins.get(filter));
-				}
-			}
-			if (bindings.size() == 0) {
-				/*
-				 * HV: This method does run in the EDT. 
-				 */
-				JOptionPane.showMessageDialog(context.getUI(), "No import plugins available",
-								"No input plugins available!", JOptionPane.ERROR_MESSAGE);
-				return false;
-			}
+        if (binding == null) {
+            // user chose the "all files" option
+            Map<String, PluginParameterBinding> bindings = new HashMap<String, PluginParameterBinding>();
+            iRIEDTP1(files, bindings);
+            iRIEDTP2(bindings);
+            
+            if (bindings.size() == 0) {
+                /*
+                 * HV: This method does run in the EDT. 
+                 */
+                JOptionPane.showMessageDialog(context.getUI(), "No import plugins available",
+                        "No input plugins available!", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
 
-			binding = bindings.values().iterator().next();
-			if (bindings.size() > 1) {
+            binding = bindings.values().iterator().next();
+            if (bindings.size() > 1) {
 
-				String key = FAVORITEIMPORT + extractFileType(files[0].getAbsolutePath());
-				final String[] possibilities = bindings.keySet().toArray(new String[0]);
-				final String preferredImport = preferences.get(key, possibilities[0]);
+                String key = FAVORITEIMPORT + extractFileType(files[0].getAbsolutePath());
+                final String[] possibilities = bindings.keySet().toArray(new String[0]);
+                final String preferredImport = preferences.get(key, possibilities[0]);
 
-				String selected = (String) JOptionPane.showInputDialog(context.getUI(),
-									"Available Import Plugins for file " + files[0].getName() + ":",
-									"Select an import plugin...", JOptionPane.PLAIN_MESSAGE, null, possibilities,
-									preferredImport);
+                String selected = (String) JOptionPane.showInputDialog(context.getUI(),
+                        "Available Import Plugins for file " + files[0].getName() + ":",
+                        "Select an import plugin...", JOptionPane.PLAIN_MESSAGE, null, possibilities,
+                        preferredImport);
 
-				if (selected == null) {
-					return false;
-				}
+                if (selected == null) {
+                    return false;
+                }
 
-				preferences.put(key, selected);
-				binding = bindings.get(selected);
-			}
-		}
-		if (binding == null) {
-			// No import was selected.
-			return false;
-		}
+                preferences.put(key, selected);
+                binding = bindings.get(selected);
+            }
+        }
+        if (binding == null) {
+            // No import was selected.
+            return false;
+        }
 
-		// HV: Dialog-part is now done, hence we can off-load the actual importing to another thread.
-		// This frees the EDT for showing the progress bar while doing the import.
-		final PluginParameterBinding finalBinding = binding;
-		Runnable importThread = new Runnable() {
-			public void run() {
-				importResourceNotInEDT(finalBinding, files);
-			}
-		};
-		(new Thread(importThread)).start();
-		return true;
-	}
-	
-	private boolean importResourceNotInEDT(final PluginParameterBinding binding, final File... files) {
-		if (EventQueue.isDispatchThread()) {
-			System.err.println("Method should never be called from EDT");
-			return false;
-		}
-		/*
-		 * Synchronize on the provided object manager to prevent multiple imports 
-		 * talking at the same time to this manager.
-		 */
-		synchronized(context.getProvidedObjectManager()) {
-		for (File f : files) {
-			UIPluginContext importContext = context.getMainPluginContext()
-					.createChildContext("Opening file with " + binding.getPlugin().getName());
-			importContext.getPluginLifeCycleEventListeners().add(this);
+        // HV: Dialog-part is now done, hence we can off-load the actual importing to another thread.
+        // This frees the EDT for showing the progress bar while doing the import.
+        final PluginParameterBinding finalBinding = binding;
+        Runnable importThread = new Runnable() {
+            public void run() {
+                importResourceNotInEDT(finalBinding, files);
+            }
+        };
+        (new Thread(importThread)).start();
+        return true;
+    }
+    
+    private ProgressOverlayDialog metodoManutenzione2(UIPluginContext importContext,final PluginParameterBinding binding){
+        return new ProgressOverlayDialog(context.getController().getMainView(),
+                        importContext, "Importing " + binding.getPlugin().getName());
+    }
 
-			ProgressOverlayDialog progress = new ProgressOverlayDialog(context.getController().getMainView(),
-					importContext, "Importing " + binding.getPlugin().getName());
-			context.getController().getMainView().showOverlay(progress);
+    private boolean importResourceNotInEDT(final PluginParameterBinding binding, final File... files) {
+        if (EventQueue.isDispatchThread()) {
+            System.err.println("Method should never be called from EDT");
+            return false;
+        }
+        /*
+         * Synchronize on the provided object manager to prevent multiple imports 
+         * talking at the same time to this manager.
+         */
+        synchronized (context.getProvidedObjectManager()) {
+            for (File f : files) {
+                UIPluginContext importContext = context.getMainPluginContext()
+                        .createChildContext("Opening file with " + binding.getPlugin().getName());
+                importContext.getPluginLifeCycleEventListeners().add(this);
+
+                ProgressOverlayDialog progress = metodoManutenzione2(importContext,binding);
+                context.getController().getMainView().showOverlay(progress);
 //			Thread.yield();
 
-			PluginExecutionResult result = binding.invoke(importContext, f);
-			context.getProvidedObjectManager().createProvidedObjects(importContext);
+                PluginExecutionResult result = binding.invoke(importContext, f);
+                context.getProvidedObjectManager().createProvidedObjects(importContext);
 
-			try {
-				result.synchronize();
-			} catch (CancellationException e) {
-				context.getController().getMainView().hideOverlay();
-				SwingUtilities.invokeLater(new Runnable() {
-					public void run() {
-						JOptionPane.showMessageDialog(context.getUI(), "Import of " + files + " cancelled.", "Import cancelled",
-								JOptionPane.WARNING_MESSAGE);
-					}
-				});
-				context.getMainPluginContext().log("Import of " + files + " cancelled.");
-				return false;
-			} catch (final Exception e) {
-				context.getController().getMainView().hideOverlay();
-				SwingUtilities.invokeLater(new Runnable() {
-					public void run() {
-						JOptionPane.showMessageDialog(context.getUI(),
-								"<html>Error with import of " + files + ":<br>" + e.getMessage() + "</html>", "Import failed",
-								JOptionPane.ERROR_MESSAGE);
-					}
-				});
-				context.getMainPluginContext().log("Error with import of " + files + ".", MessageLevel.ERROR);
-				context.getMainPluginContext().log(e);
-				return false;
-			} finally {
-				importContext.getParentContext().deleteChild(importContext);
-			}
+                try {
+                    result.synchronize();
+                } catch (CancellationException e) {
+                    context.getController().getMainView().hideOverlay();
+                    SwingUtilities.invokeLater(new Runnable() {
+                        public void run() {
+                            JOptionPane.showMessageDialog(context.getUI(), "Import of " + files + " cancelled.", "Import cancelled",
+                                    JOptionPane.WARNING_MESSAGE);
+                        }
+                    });
+                    context.getMainPluginContext().log("Import of " + files + " cancelled.");
+                    return false;
+                } catch (final Exception e) {
+                    context.getController().getMainView().hideOverlay();
+                    SwingUtilities.invokeLater(new Runnable() {
+                        public void run() {
+                            JOptionPane.showMessageDialog(context.getUI(),
+                                    "<html>Error with import of " + files + ":<br>" + e.getMessage() + "</html>", "Import failed",
+                                    JOptionPane.ERROR_MESSAGE);
+                        }
+                    });
+                    context.getMainPluginContext().log("Error with import of " + files + ".", MessageLevel.ERROR);
+                    context.getMainPluginContext().log(e);
+                    return false;
+                } finally {
+                    importContext.getParentContext().deleteChild(importContext);
+                }
 
-			context.getController().getMainView().hideOverlay();
-		}
-		}
-		return true;
+                context.getController().getMainView().hideOverlay();
+            }
+        }
+        return true;
 
-	}
+    }
 
-	private String extractFileType(String filename) {
-		int indexName = filename.lastIndexOf(File.separatorChar);
-		int indexDot = filename.indexOf('.', indexName);
-		return filename.substring(indexDot);
-	}
+    private String extractFileType(String filename) {
+        int indexName = filename.lastIndexOf(File.separatorChar);
+        int indexDot = filename.indexOf('.', indexName);
+        return filename.substring(indexDot);
+    }
 
-	private void buildImportPlugins() {
-		importplugins = new TreeMap<FileFilter, PluginParameterBinding>(new Comparator<FileFilter>() {
+    private void buildImportPlugins() {
+        importplugins = new TreeMap<FileFilter, PluginParameterBinding>(new Comparator<FileFilter>() {
 
-			public int compare(FileFilter f1, FileFilter f2) {
-				return f1.getDescription().toLowerCase().compareTo(f2.getDescription().toLowerCase());
-			}
-		});
+            public int compare(FileFilter f1, FileFilter f2) {
+                return f1.getDescription().toLowerCase().compareTo(f2.getDescription().toLowerCase());
+            }
+        });
 
-		Set<PluginParameterBinding> potentialImportPlugins = context.getPluginManager()
-				.getPluginsAcceptingOrdered(UIPluginContext.class, true, File.class);
+        Set<PluginParameterBinding> potentialImportPlugins = context.getPluginManager()
+                .getPluginsAcceptingOrdered(UIPluginContext.class, true, File.class);
 
-		for (PluginParameterBinding binding : potentialImportPlugins) {
-			if (binding.getPlugin().hasAnnotation(UIImportPlugin.class)) {
-				FileNameExtensionFilter filter = new FileNameExtensionFilter(
-						binding.getPlugin().getAnnotation(UIImportPlugin.class).description(),
-						binding.getPlugin().getAnnotation(UIImportPlugin.class).extensions());
-				importplugins.put(filter, binding);
-			}
-		}
+        for (PluginParameterBinding binding : potentialImportPlugins) {
+            if (binding.getPlugin().hasAnnotation(UIImportPlugin.class)) {
+                FileNameExtensionFilter filter = new FileNameExtensionFilter(
+                        binding.getPlugin().getAnnotation(UIImportPlugin.class).description(),
+                        binding.getPlugin().getAnnotation(UIImportPlugin.class).extensions());
+                importplugins.put(filter, binding);
+            }
+        }
 
-	}
+    }
 
-	public ResourceType getResourceTypeFor(Class<?> type) {
-		return resourceClasses.get(type);
-	}
+    public ResourceType getResourceTypeFor(Class<?> type) {
+        return resourceClasses.get(type);
+    }
 
-	public boolean isResourceType(Class<?> type) {
-		return resourceClasses.keySet().contains(type);
-	}
+    public boolean isResourceType(Class<?> type) {
+        return resourceClasses.keySet().contains(type);
+    }
 
-	private java.util.List<ProMResource<?>> filterList(java.util.List<ProMResource<?>> filtered,
-			ResourceFilter filter) {
-		synchronized (filtered) {
-			Iterator<ProMResource<?>> it = filtered.iterator();
-			while (it.hasNext()) {
-				if (!filter.accept(it.next())) {
-					it.remove();
-				}
-			}
-		}
-		return filtered;
-	}
+    private java.util.List<ProMResource<?>> filterList(java.util.List<ProMResource<?>> filtered,
+            ResourceFilter filter) {
+        synchronized (filtered) {
+            Iterator<ProMResource<?>> it = filtered.iterator();
+            while (it.hasNext()) {
+                if (!filter.accept(it.next())) {
+                    it.remove();
+                }
+            }
+        }
+        return filtered;
+    }
 
-	public java.util.List<ResourceType> getResourceTypes(java.util.List<? extends Resource> res) {
-		ArrayList<ResourceType> types = new ArrayList<ResourceType>(res.size());
-		for (Resource r : res) {
-			types.add(r.getType());
-		}
-		return types;
-	}
+    public java.util.List<ResourceType> getResourceTypes(java.util.List<? extends Resource> res) {
+        ArrayList<ResourceType> types = new ArrayList<ResourceType>(res.size());
+        for (Resource r : res) {
+            types.add(r.getType());
+        }
+        return types;
+    }
 
-	public void providedObjectCreated(ProvidedObjectID objectID, PluginContext context) {
-		// Ignore. Only respond when a future of an object is ready.
-	}
+    public void providedObjectCreated(ProvidedObjectID oggettoID, PluginContext contesto) {
+        // Ignore. Only respond when a future of an object is ready.
+    }
 
-	public void providedObjectDeleted(ProvidedObjectID id) {
-		if (resources.remove(id) != null) {
-			signalUpdate();
-		}
-	}
+    public void providedObjectDeleted(ProvidedObjectID id) {
+        if (resources.remove(id) != null) {
+            signalUpdate();
+        }
+    }
 
-	public void providedObjectFutureReady(ProvidedObjectID id) {
-		Class<?> type;
-		try {
-			type = context.getProvidedObjectManager().getProvidedObjectType(id);
-		} catch (ProvidedObjectDeletedException e) {
-			// If the object has been deleted, try the next one
-			return;
-		}
-		ResourceType resType = getResourceTypeFor(type);
-		if (resType != null) {
-			ProMResource<?> res;
-			try {
-				res = context.getResourceManager()
-						.getResourceForInstance(context.getProvidedObjectManager().getProvidedObjectObject(id, true));
-				if (res == null) {
-					res = new ProMPOResource(context, null, resType, id,
-							Collections.<Collection<ProMPOResource>>emptyList());
-					addResource(id, res);
-				}
-			} catch (ProvidedObjectDeletedException e) {
-				// If the object has been deleted, try the next one
-				return;
-			}
-		}
-	}
+    public void providedObjectFutureReady(ProvidedObjectID id) {
+        Class<?> type;
+        try {
+            type = context.getProvidedObjectManager().getProvidedObjectType(id);
+        } catch (ProvidedObjectDeletedException e) {
+            // If the object has been deleted, try the next one
+            return;
+        }
+        ResourceType resType = getResourceTypeFor(type);
+        if (resType != null) {
+            ProMResource<?> res;
+            try {
+                res = context.getResourceManager()
+                        .getResourceForInstance(context.getProvidedObjectManager().getProvidedObjectObject(id, true));
+                if (res == null) {
+                    res = new ProMPOResource(context, null, resType, id,
+                            Collections.<Collection<ProMPOResource>>emptyList());
+                    addResource(id, res);
+                }
+            } catch (ProvidedObjectDeletedException e) {
+                // If the object has been deleted, try the next one
+                return;
+            }
+        }
+    }
 
-	public void providedObjectNameChanged(ProvidedObjectID id) {
-		// Ignore. Access to the object is provided using late-binding, hence
-		// the last version of the label is always returned by the resource
-		if (resources.containsKey(id)) {
-			signalUpdate();
-		}
-	}
+    public void providedObjectNameChanged(ProvidedObjectID id) {
+        // Ignore. Access to the object is provided using late-binding, hence
+        // the last version of the label is always returned by the resource
+        if (resources.containsKey(id)) {
+            signalUpdate();
+        }
+    }
 
-	public void providedObjectObjectChanged(ProvidedObjectID id) {
-		// Ignore. Access to the object is provided using late-binding, hence
-		// the last version of the object is always returned by the resource
-		if (resources.containsKey(id)) {
-			signalUpdate();
-		}
-	}
+    public void providedObjectObjectChanged(ProvidedObjectID id) {
+        // Ignore. Access to the object is provided using late-binding, hence
+        // the last version of the object is always returned by the resource
+        if (resources.containsKey(id)) {
+            signalUpdate();
+        }
+    }
 
-	@SuppressWarnings("unchecked")
-	public <R extends ProMResource<?>> R addResource(ProvidedObjectID id, R res) {
-		if (resources.containsKey(id)) {
-			return (R) resources.get(id);
-		} else {
-			resources.put(id, res);
-			signalUpdate();
-			return res;
-		}
-	}
+    @SuppressWarnings("unchecked")
+    public <R extends ProMResource<?>> R addResource(ProvidedObjectID id, R res) {
+        if (resources.containsKey(id)) {
+            return (R) resources.get(id);
+        } else {
+            resources.put(id, res);
+            signalUpdate();
+            return res;
+        }
+    }
 
-	public ProMResource<?> getResourceForInstance(Object o) {
-		for (ProMResource<?> resource : getAllResources()) {
-			if (resource.getInstance() == o) {
-				return resource;
-			}
-		}
-		return null;
-	}
+    public ProMResource<?> getResourceForInstance(Object o) {
+        for (ProMResource<?> resource : getAllResources()) {
+            if (resource.getInstance() == o) {
+                return resource;
+            }
+        }
+        return null;
+    }
 
-	//********************************************************************
-	// PluginLifeCycle.
-	//
+    //********************************************************************
+    // PluginLifeCycle.
+    //
+    public void pluginCancelled(PluginContext contesto) {
+        // TODO Auto-generated method stub
 
-	public void pluginCancelled(PluginContext context) {
-		// TODO Auto-generated method stub
+    }
+    
+     private ProgressOverlayDialog metodoManutenzione2(ResourceType resType ,ProvidedObjectID id ){
+        return  new ProMPOResource(context, null, resType, id,
+                        Collections.<Collection<ProMPOResource>>emptyList());
+    }
 
-	}
+    
+    public void pluginCompleted(PluginContext pluginContext) {
+        PluginExecutionResult result = pluginContext.getResult();
+        int resultSize = result.getSize();
+        
+        for (int i = 0; i < resultSize; i++) {
+            ProvidedObjectID id = result.getProvidedObjectID(i);
+            Class<?> type;
+            try {
+                type = context.getProvidedObjectManager().getProvidedObjectType(id);
+            } catch (ProvidedObjectDeletedException e) {
+                // If the object has been deleted, try the next one
+                continue;
+            }
+            ResourceType resType = getResourceTypeFor(type);
+            if (resType != null) {
+                ProMResource<?> res = metodoManutenzione2(resType ,id);
+                res = addResource(id, res);
+                if (i + 1 == result.getPlugin().getMostSignificantResult()) {
+                    res.setFavorite(true);
+                }
+            }
+        }
+    }
 
-	public void pluginCompleted(PluginContext pluginContext) {
-		PluginExecutionResult result = pluginContext.getResult();
-		for (int i = 0; i < result.getSize(); i++) {
-			ProvidedObjectID id = result.getProvidedObjectID(i);
-			Class<?> type;
-			try {
-				type = context.getProvidedObjectManager().getProvidedObjectType(id);
-			} catch (ProvidedObjectDeletedException e) {
-				// If the object has been deleted, try the next one
-				continue;
-			}
-			ResourceType resType = getResourceTypeFor(type);
-			if (resType != null) {
-				ProMResource<?> res = new ProMPOResource(context, null, resType, id,
-						Collections.<Collection<ProMPOResource>>emptyList());
-				res = addResource(id, res);
-				if (i + 1 == result.getPlugin().getMostSignificantResult()) {
-					res.setFavorite(true);
-				}
-			}
-		}
-	}
+    public void pluginCreated(PluginContext contesto) {
+        // gracefully ignore
+    }
 
-	public void pluginCreated(PluginContext context) {
-		// gracefully ignore
-	}
+    public void pluginDeleted(PluginContext contesto) {
+        // gracefully ignore
+    }
 
-	public void pluginDeleted(PluginContext context) {
-		// gracefully ignore
-	}
+    public void pluginFutureCreated(PluginContext contesto) {
+        // gracefully ignore
+    }
 
-	public void pluginFutureCreated(PluginContext context) {
-		// gracefully ignore
-	}
+    public void pluginResumed(PluginContext contesto) {
+        // gracefully ignore
+    }
 
-	public void pluginResumed(PluginContext context) {
-		// gracefully ignore
-	}
+    public void pluginStarted(PluginContext contesto) {
+        // gracefully ignore
+    }
 
-	public void pluginStarted(PluginContext context) {
-		// gracefully ignore
-	}
+    public void pluginSuspended(PluginContext contesto) {
+        // gracefully ignore
+    }
 
-	public void pluginSuspended(PluginContext context) {
-		// gracefully ignore
-	}
+    public void pluginTerminatedWithError(PluginContext contesto, Throwable t) {
+        // gracefully ignore
+    }
 
-	public void pluginTerminatedWithError(PluginContext context, Throwable t) {
-		// gracefully ignore
-	}
+    public void addedImportPlugins() {
+        synchronized (importPluginAdded) {
+            importPluginAdded = true;
+        }
+    }
 
-	public void addedImportPlugins() {
-		synchronized (importPluginAdded) {
-			importPluginAdded = true;
-		}
-	}
+    //********************************************************************
+    // ConnectionListener.
+    //
+    public void connectionCreated(ConnectionID id) {
+        if (!resources.containsKey(id)) {
+            Connection conn;
+            try {
+                conn = connectionManager.getConnection(id);
+                if (!conn.isRemoved()) {
+                    // TODO
+                    java.util.List<Collection<ProMPOResource>> values = new ArrayList<Collection<ProMPOResource>>();
+                    for (Object o : conn.getObjects().baseSet()) {
+                        ProMResource<?> r = context.getResourceManager().getResourceForInstance(o);
+                        if (r != null) {
+                            assert (r instanceof ProMPOResource);
+                            Collection<ProMPOResource> c = new LinkedList<ProMPOResource>();
+                            c.add((ProMPOResource) r);
+                            values.add(c);
+                        }
+                    }
 
-	//********************************************************************
-	// ConnectionListener.
-	//
+                    ProMCResource res = new ProMCResource(context, null, getResourceTypeFor(conn.getClass()), id,
+                            values);
+                    resources.put(id, res);
+                    signalUpdate();
+                }
+            } catch (ConnectionCannotBeObtained e) {
+                // do nothing
+            }
+        }
+    }
 
-	public void connectionCreated(ConnectionID id) {
-		if (!resources.containsKey(id)) {
-			Connection conn;
-			try {
-				conn = connectionManager.getConnection(id);
-				if (!conn.isRemoved()) {
-					// TODO
-					java.util.List<Collection<ProMPOResource>> values = new ArrayList<Collection<ProMPOResource>>();
-					for (Object o : conn.getObjects().baseSet()) {
-						ProMResource<?> r = context.getResourceManager().getResourceForInstance(o);
-						if (r != null) {
-							assert(r instanceof ProMPOResource);
-							Collection<ProMPOResource> c = new LinkedList<ProMPOResource>();
-							c.add((ProMPOResource) r);
-							values.add(c);
-						}
-					}
+    public void connectionDeleted(ConnectionID id) {
+        resources.remove(id);
+        // No need to alert serializer, the connection will not be serialized if it has
+        // been removed/destroyed.
+    }
 
-					ProMCResource res = new ProMCResource(context, null, getResourceTypeFor(conn.getClass()), id,
-							values);
-					resources.put(id, res);
-					signalUpdate();
-				}
-			} catch (ConnectionCannotBeObtained e) {
-				// do nothing
-			}
-		}
-	}
-
-	public void connectionDeleted(ConnectionID id) {
-		resources.remove(id);
-		// No need to alert serializer, the connection will not be serialized if it has
-		// been removed/destroyed.
-	}
-
-	public void connectionUpdated(ConnectionID id) {
-		assert(resources.containsKey(id));
-		// No need to alert the serializer, the connections is not serialized yet, it will
-		// be on exit, not earlier.
-		signalUpdate();
-	}
+    public void connectionUpdated(ConnectionID id) {
+        assert (resources.containsKey(id));
+        // No need to alert the serializer, the connections is not serialized yet, it will
+        // be on exit, not earlier.
+        signalUpdate();
+    }
 
 }

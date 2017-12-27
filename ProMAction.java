@@ -23,6 +23,10 @@ import org.processmining.framework.plugin.PluginManager;
 import org.processmining.framework.plugin.PluginParameterBinding;
 import org.processmining.framework.util.Cast;
 
+/**
+ * 
+ * @author Utente
+ */
 public class ProMAction implements Action, Comparable<ProMAction> {
 
 	private final PluginDescriptor plugin;
@@ -39,6 +43,45 @@ public class ProMAction implements Action, Comparable<ProMAction> {
 	private String help;
 	private String[] keywords;
 	private String[] catergories;
+        
+        private void pMAP1(int parameterNamesSize, PluginDescriptor plugDes, int metIn, ProMResourceManager resourceManager, int resIndex){
+            for (int i = 0; i < parameterNamesSize; i++) {
+			Class<?> type = plugDes.getParameterTypes(metIn).get(i);
+
+			String name = plugDes.getParameterNames(metIn).get(i);
+
+			boolean isArray = type.isArray();
+			if (isArray) {
+				type = type.getComponentType();
+			}
+			ResourceType resType = resourceManager.getResourceTypeFor(type);
+
+			if (resType != null) {
+				inputs.add(new ProMParameter(name, i, resType, isArray));
+				isResource[i] = true;
+				resourceIndex[i] = resIndex++;
+			} else {
+				isResource[i] = false;
+				resourceIndex[i] = -1;
+			}
+		}
+        }
+        
+        private void pMAP2(int returnNamesSize, PluginDescriptor plugDes, ProMResourceManager resourceManager){
+            for (int i = 0; i < returnNamesSize; i++) {
+			Class<?> type = plugDes.getReturnTypes().get(i);
+			String name = plugDes.getReturnNames().get(i);
+
+			boolean isArray = type.isArray();
+			if (type.isArray()) {
+				type = type.getComponentType();
+			}
+			ResourceType resType = resourceManager.getResourceTypeFor(type);
+			if (resType != null) {
+				outputs.add(new ProMParameter(name, i, resType, isArray));
+			}
+		}
+        }
 
 	public ProMAction(ProMResourceManager resourceManager, PluginManager pluginManager, final PluginDescriptor plugin,
 			final int methodIndex) {
@@ -99,41 +142,14 @@ public class ProMAction implements Action, Comparable<ProMAction> {
 
 		inputs = new ArrayList<Parameter>();
 		int resIndex = 0;
-		for (int i = 0; i < plugin.getParameterNames(methodIndex).size(); i++) {
-			Class<?> type = plugin.getParameterTypes(methodIndex).get(i);
-
-			String name = plugin.getParameterNames(methodIndex).get(i);
-
-			boolean isArray = type.isArray();
-			if (isArray) {
-				type = type.getComponentType();
-			}
-			ResourceType resType = resourceManager.getResourceTypeFor(type);
-
-			if (resType != null) {
-				inputs.add(new ProMParameter(name, i, resType, isArray));
-				isResource[i] = true;
-				resourceIndex[i] = resIndex++;
-			} else {
-				isResource[i] = false;
-				resourceIndex[i] = -1;
-			}
-		}
+		int parameterNamesSize = plugin.getParameterNames(methodIndex).size();
+                pMAP1(parameterNamesSize, plugin, methodIndex, resourceManager, resIndex);
+		
 
 		outputs = new ArrayList<Parameter>();
-		for (int i = 0; i < plugin.getReturnNames().size(); i++) {
-			Class<?> type = plugin.getReturnTypes().get(i);
-			String name = plugin.getReturnNames().get(i);
-
-			boolean isArray = type.isArray();
-			if (type.isArray()) {
-				type = type.getComponentType();
-			}
-			ResourceType resType = resourceManager.getResourceTypeFor(type);
-			if (resType != null) {
-				outputs.add(new ProMParameter(name, i, resType, isArray));
-			}
-		}
+		int returnNamesSize = plugin.getReturnNames().size();
+                pMAP2(returnNamesSize, plugin, resourceManager);
+		
 
 	}
 
@@ -160,7 +176,8 @@ public class ProMAction implements Action, Comparable<ProMAction> {
 	public <R extends Resource> List<PluginParameterBinding> getBindings(List<Collection<R>> parameterValues,
 			boolean executable) {
 		Class<?>[] types = new Class<?>[parameterValues.size()];
-		for (int i = 0; i < parameterValues.size(); i++) {
+		int paramValuesSize = parameterValues.size();
+		for (int i = 0; i < paramValuesSize; i++) {
 			Collection<? extends Resource> resources = parameterValues.get(i);
 			if (resources.isEmpty()) {
 				types[i] = null;

@@ -9,6 +9,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
+/**
+ * 
+ * @author Utente
+ */
 public class RTTminingBPMN {
 
     BPMNDiagram model;
@@ -27,6 +31,11 @@ public class RTTminingBPMN {
         this.fixIncomingEdges(graph);
 
         return graph;
+    }
+    
+    private void verifica(RTTnode n, BPMNNode node){
+        if(n.isType(RTTnode.ForkNode) && this.model.getOutEdges(node).size() == 1)
+                n.join();
     }
 
     private void computeNodes(RTTgraph graph){
@@ -62,8 +71,8 @@ public class RTTminingBPMN {
 
             // Siccome non posso esmainare esattamente se è un fork o un join
             // verifico, se ho in output un solo arco, è un join
-            if(n.isType(RTTnode.ForkNode) && this.model.getOutEdges(node).size() == 1)
-                n.join();
+            verifica(n, node);
+            
 
             graph.add(n);
         }
@@ -85,6 +94,16 @@ public class RTTminingBPMN {
             );
         }
     }
+    
+    private static void fF(ArrayList<RTTedge> edges, boolean foundFork){
+        for(RTTedge e: edges){
+                    if(e.end().isType(RTTnode.ForkNode))
+                    {
+                        foundFork = true;
+                        break;
+                    }
+                }
+    }
 
     private void fixOutcomingEdges(RTTgraph graph){
         ArrayList<RTTnode> addAtTheEnd = new ArrayList<>();
@@ -96,13 +115,8 @@ public class RTTminingBPMN {
             ArrayList<RTTedge> edges = graph.edgesStartWith(node);
             boolean foundFork = false;
             if(edges.size() > 1){
-                for(RTTedge e: edges){
-                    if(e.end().isType(RTTnode.ForkNode))
-                    {
-                        foundFork = true;
-                        break;
-                    }
-                }
+                foundFork = fF(edges, foundFork);
+                
             }
             else continue;
 

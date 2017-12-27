@@ -21,6 +21,10 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * implementato 
  */
 
+/**
+ * 
+ * @author Utente
+ */
 public class ConstraintsViewPanel extends JPanel {
 
 	/**

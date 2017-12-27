@@ -21,6 +21,10 @@ import org.processmining.framework.plugin.PluginContext;
 import org.processmining.framework.plugin.Progress;
 import org.processmining.framework.plugin.impl.AbstractPluginContext;
 
+/**
+ * 
+ * @author Utente
+ */
 public class UIPluginContext extends AbstractPluginContext {
 
 	/*
@@ -121,7 +125,7 @@ public class UIPluginContext extends AbstractPluginContext {
 		return (UIPluginContext) super.getRootContext();
 	}
 
-	public void setTask(ProMTask task) {
+	private void setTask(ProMTask task) {
 		this.task = task;
 	}
 

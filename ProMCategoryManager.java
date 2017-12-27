@@ -9,6 +9,10 @@ import org.processmining.contexts.uitopia.UIContext;
 import org.processmining.contexts.uitopia.model.ProMCategory;
 import org.processmining.framework.plugin.annotations.PluginCategory;
 
+/**
+ * 
+ * @author Utente
+ */
 public class ProMCategoryManager implements CategoryManager {
 
 	private static ProMCategoryManager instance = null;

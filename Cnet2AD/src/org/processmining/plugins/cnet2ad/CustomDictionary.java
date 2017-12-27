@@ -2,6 +2,12 @@ package org.processmining.plugins.cnet2ad;
 
 import java.util.ArrayList;
 
+/**
+ * 
+ * @author Utente
+ * @param <T>
+ * @param <V> 
+ */
 public class CustomDictionary<T, V> {
 
     public ArrayList<T> keys;

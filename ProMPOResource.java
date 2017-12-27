@@ -9,6 +9,10 @@ import org.processmining.contexts.uitopia.UIContext;
 import org.processmining.framework.providedobjects.ProvidedObjectDeletedException;
 import org.processmining.framework.providedobjects.ProvidedObjectID;
 
+/**
+ * 
+ * @author Utente
+ */
 public class ProMPOResource extends ProMResource<ProvidedObjectID> {
 
 	public ProMPOResource(UIContext context, Action sourceAction, ResourceType resType, ProvidedObjectID id,

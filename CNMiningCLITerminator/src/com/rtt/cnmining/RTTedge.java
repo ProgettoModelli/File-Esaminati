@@ -1,5 +1,9 @@
 package com.rtt.cnmining;
 
+/**
+ * 
+ * @author Utente
+ */
 public class RTTedge {
 
     private static int idCounter = 0;

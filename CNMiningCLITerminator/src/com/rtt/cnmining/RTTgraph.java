@@ -3,6 +3,10 @@ package com.rtt.cnmining;
 import java.util.ArrayList;
 import java.util.Random;
 
+/**
+ * 
+ * @author Utente
+ */
 public class RTTgraph {
 
     private ArrayList<RTTnode> nodes;
@@ -21,22 +25,22 @@ public class RTTgraph {
         this.name = name;
     }
 
-    public RTTnode add(RTTnode node){
-        RTTnode n = this.node(node.name);
+    public RTTnode add(RTTnode corda){
+        RTTnode n = this.node(corda.name);
         if( n != null )
             return n;
 
-        this.nodes.add(node);
-        return node;
+        this.nodes.add(corda);
+        return corda;
     }
 
-    public RTTedge add(RTTedge edge){
-        RTTedge e = this.edge(edge.begin().name, edge.end().name);
+    public RTTedge add(RTTedge spigolo){
+        RTTedge e = this.edge(spigolo.begin().name, spigolo.end().name);
         if( e != null )
             return e;
 
-        this.edges.add(edge);
-        return edge;
+        this.edges.add(spigolo);
+        return spigolo;
     }
 
     public ArrayList<RTTnode> nodes(){
@@ -55,9 +59,9 @@ public class RTTgraph {
         return result;
     }
 
-    public RTTnode node(String name){
+    public RTTnode nodo(String nome){
         for(RTTnode node: this.nodes()){
-            if(node.name.equals((name)))
+            if(node.name.equals((nome)))
                 return node;
         }
         return null;
@@ -71,10 +75,10 @@ public class RTTgraph {
         return null;
     }
 
-    public ArrayList<RTTnode> followers(RTTnode node){
+    public ArrayList<RTTnode> followers(RTTnode corda){
         ArrayList<RTTnode> result = new ArrayList<>();
 
-        for(RTTedge edge: this.edgesStartWith(node)){
+        for(RTTedge edge: this.edgesStartWith(corda)){
             if(result.contains(edge.end()) == false)
                 result.add(edge.end());
         }
@@ -82,10 +86,10 @@ public class RTTgraph {
         return result;
     }
 
-    public ArrayList<RTTnode> predecessors(RTTnode node){
+    public ArrayList<RTTnode> predecessors(RTTnode corda){
         ArrayList<RTTnode> result = new ArrayList<>();
 
-        for(RTTedge edge: this.edgesEndWith(node)){
+        for(RTTedge edge: this.edgesEndWith(corda)){
             if(result.contains(edge.begin()) == false)
                 result.add(edge.begin());
         }
@@ -114,14 +118,14 @@ public class RTTgraph {
     }
 
     // Ritorna la lista di archi in uscita dal nodo specificato
-    public ArrayList<RTTedge> edgesStartWith(RTTnode node){
+    public ArrayList<RTTedge> edgesStartWith(RTTnode corda){
         ArrayList<RTTedge> result = new ArrayList<>();
 
-        if(this.nodes.contains(node) == false)
+        if(this.nodes.contains(corda) == false)
             return result;
 
         for(RTTedge edge: this.edges()){
-            if(edge.begin().equals(node) && result.contains(edge) == false)
+            if(edge.begin().equals(corda) && result.contains(edge) == false)
                 result.add(edge);
         }
 
@@ -129,14 +133,14 @@ public class RTTgraph {
     }
 
     // Ritorna la lista di archi in entrata dal nodo specificato
-    public ArrayList<RTTedge> edgesEndWith(RTTnode node){
+    public ArrayList<RTTedge> edgesEndWith(RTTnode corda){
         ArrayList<RTTedge> result = new ArrayList<>();
 
-        if(this.nodes.contains(node) == false)
+        if(this.nodes.contains(corda) == false)
             return result;
 
         for(RTTedge edge: this.edges()){
-            if(edge.end().equals(node) && result.contains(edge) == false)
+            if(edge.end().equals(corda) && result.contains(edge) == false)
                 result.add(edge);
         }
 
@@ -225,11 +229,11 @@ public class RTTgraph {
         return xmi.toString();
     }
 
-    private String xmiOutcoming(RTTnode node){
+    private String xmiOutcoming(RTTnode corda){
         StringBuilder str = new StringBuilder();
 
         String comma = "";
-        for(RTTedge edge: this.edgesStartWith(node))
+        for(RTTedge edge: this.edgesStartWith(corda))
         {
             str.append(comma);
             str.append(edge.id);
@@ -240,11 +244,11 @@ public class RTTgraph {
     }
 
 
-    private String xmiIncoming(RTTnode node){
+    private String xmiIncoming(RTTnode corda){
         StringBuilder str = new StringBuilder();
 
         String comma = "";
-        for(RTTedge edge: this.edgesEndWith(node))
+        for(RTTedge edge: this.edgesEndWithcorda)
         {
             str.append(comma);
             str.append(edge.id);

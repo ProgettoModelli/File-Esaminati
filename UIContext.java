@@ -21,6 +21,10 @@ import org.processmining.contexts.uitopia.model.ProMTask;
 import org.processmining.framework.plugin.PluginContext;
 import org.processmining.framework.plugin.impl.AbstractGlobalContext;
 
+/**
+ * 
+ * @author Utente
+ */
 public class UIContext extends AbstractGlobalContext implements
 		FrameworkHub<ProMAction, ProMTask, ProMResource<?>, ProMPOResource> {
 

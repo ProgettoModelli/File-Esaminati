@@ -22,6 +22,10 @@ import org.processmining.framework.plugin.PluginDescriptor;
 import org.processmining.framework.plugin.PluginManager.PluginManagerListener;
 import org.processmining.framework.plugin.PluginParameterBinding;
 
+/**
+ * 
+ * @author Utente
+ */
 public class ProMActionManager implements ActionManager<ProMAction>, PluginManagerListener {
 
 	private final SortedSet<ProMAction> actions = new TreeSet<ProMAction>();
@@ -37,7 +41,8 @@ public class ProMActionManager implements ActionManager<ProMAction>, PluginManag
 	}
 
 	private void addPlugin(PluginDescriptor plugin) {
-		for (int i = 0; i < plugin.getNumberOfMethods(); i++) {
+		int pluginNumberOfMethods = plugin.getNumberOfMethods();
+		for (int i = 0; i < pluginNumberOfMethods; i++) {
 			// See if this is an action
 			if (checkPlugin(context, plugin, i)) {
 				// Construct an action
@@ -50,9 +55,9 @@ public class ProMActionManager implements ActionManager<ProMAction>, PluginManag
 
 	private static ProMActionManager instance = null;
 
-	public static ProMActionManager initialize(UIContext context) {
+	public static ProMActionManager initialize(UIContext contesto) {
 		if (instance == null) {
-			instance = new ProMActionManager(context);
+			instance = new ProMActionManager(contesto);
 		}
 		return instance;
 	}
@@ -73,22 +78,9 @@ public class ProMActionManager implements ActionManager<ProMAction>, PluginManag
 
 		return types;
 	}
-
-	public List<ProMAction> getActions(List<ResourceType> parameters, List<ResourceType> requiredOutput, ActionType type) {
-
-		List<ProMAction> enabledActions = new ArrayList<ProMAction>();
-
-		actionLoop: for (ProMAction action : actions) {
-
-			// Check for type match
-			if ((type != null) && !action.getType().equals(type)) {
-				// types don't match
-				continue;
-			}
-
-			// Check if all given output types are present in the plugin's output
-			Collection<ResourceType> outputs = getResourcesTypesFor(action.getOutput());
-			for (ResourceType required : requiredOutput) {
+        
+        public static boolean gAP1(List<ResourceType> requiredOutput, Collection<ResourceType> outputs, boolean flag){
+            for (ResourceType required : requiredOutput) {
 				boolean found = false;
 				for (ResourceType output : outputs) {
 					found |= required.isAssignableFrom(output);
@@ -97,12 +89,31 @@ public class ProMActionManager implements ActionManager<ProMAction>, PluginManag
 					}
 				}
 				if (!found) {
-					continue actionLoop;
+					flag=false;
 				}
 			}
+            return flag;
+        }
+
+	public List<ProMAction> getActions(List<ResourceType> parameters, List<ResourceType> requiredOutput, ActionType type) {
+
+		List<ProMAction> enabledActions = new ArrayList<ProMAction>();
+                boolean flag=true;
+                Class<?>[] types = new Class<?>[parameters.size()];
+                while (flag==true){
+                    for (ProMAction action : actions) {
+			// Check for type match
+			if ((type != null) && !action.getType().equals(type)) {
+				// types don't match
+				continue;
+			}
+
+			// Check if all given output types are present in the plugin's output
+			Collection<ResourceType> outputs = getResourcesTypesFor(action.getOutput());
+                        flag = gAP1(requiredOutput, outputs, flag);
+			
 
 			// Check for enabledness using a pluginparamterbinding
-			Class<?>[] types = new Class<?>[parameters.size()];
 			int i = 0;
 			for (ResourceType r : parameters) {
 				types[i++] = r.getTypeClass();
@@ -118,6 +129,7 @@ public class ProMActionManager implements ActionManager<ProMAction>, PluginManag
 
 			enabledActions.add(action);
 		}
+                }
 
 		return enabledActions;
 	}
@@ -126,7 +138,7 @@ public class ProMActionManager implements ActionManager<ProMAction>, PluginManag
 		return new ArrayList<ProMAction>(actions);
 	}
 
-	private boolean checkPlugin(UIContext context, PluginDescriptor plugin, int methodIndex) {
+	private boolean checkPlugin(UIContext contesto, PluginDescriptor plugin, int methodIndex) {
 		if (plugin.getAnnotation(Visualizer.class) != null) {
 			return false;
 		}
@@ -139,7 +151,8 @@ public class ProMActionManager implements ActionManager<ProMAction>, PluginManag
 		if (plugin.getAnnotation(UITopiaVariant.class, methodIndex) == null) {
 			return false;
 		}
-		for (int p = 0; p < plugin.getParameterNames().size(); p++) {
+		int parameterNamesSize = plugin.getParameterNames().size();
+		for (int p = 0; p < parameterNamesSize; p++) {
 			Class<?> type = plugin.getPluginParameterType(methodIndex, p);
 			if ((type != null) && !context.getResourceManager().isResourceType(type)) {
 				return false;
@@ -162,7 +175,8 @@ public class ProMActionManager implements ActionManager<ProMAction>, PluginManag
 
 		if (plugin.getAnnotation(Visualizer.class) != null) {
 			HashSet<Class<?>> parTypes = new HashSet<Class<?>>();
-			for (int i = 0; i < plugin.getNumberOfMethods(); i++) {
+			int pluginNumberOfMethods = plugin.getNumberOfMethods();
+			for (int i = 0; i < pluginNumberOfMethods; i++) {
 				parTypes.addAll(plugin.getParameterTypes(i));
 			}
 			for (Class<?> parType : parTypes) {

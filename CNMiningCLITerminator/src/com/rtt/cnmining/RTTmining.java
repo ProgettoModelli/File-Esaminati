@@ -8,6 +8,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
 
+/**
+ * 
+ * @author Utente
+ */
 public class RTTmining {
 
     private Flex causalnet;
@@ -165,6 +169,29 @@ public class RTTmining {
     }
     */
 
+    private static void cIB(Iterator<FlexNode> i, RTTgraph graph, FlexNode node, RTTnode endNode){
+       while(i.hasNext()) {
+                    FlexNode n = i.next();
+                    for(RTTedge e: graph.edgesEndWith(graph.node(node.getLabel()))){
+                        if(e.begin().name.contains(n.getLabel())) {
+
+                            if(e.begin().equals(endNode))
+                                continue;
+                            if(e.begin().name.contains("BranchIn") && endNode.name.contains("JoinBranch") &&
+                                    endNode.name.contains(n.getLabel()))
+                                continue;
+
+                            System.out.println("[Fixing Edge] " + e.toString() + "...");
+                            e.end(endNode);
+                            System.out.println("[Fixed] " + e.toString());
+                        }
+                        else {
+                            //System.out.println("[Fix Fail] " + e.toString());
+                        }
+                    }
+                } 
+    }
+    
     private void convertInputBindings(RTTgraph graph) {
         System.out.println("[RTTmining] computing input bindings...");
 
@@ -198,33 +225,12 @@ public class RTTmining {
 
                 // Aggiungi gli archi
                 Iterator<FlexNode> i = input.iterator();
-                while(i.hasNext()) {
-                    FlexNode n = i.next();
-                    for(RTTedge e: graph.edgesEndWith(graph.node(node.getLabel()))){
-                        if(e.begin().name.contains(n.getLabel())) {
-
-                            if(e.begin().equals(endNode))
-                                continue;
-                            if(e.begin().name.contains("BranchIn") && endNode.name.contains("JoinBranch") &&
-                                    endNode.name.contains(n.getLabel()))
-                                continue;
-
-                            System.out.println("[Fixing Edge] " + e.toString() + "...");
-                            e.end(endNode);
-                            System.out.println("[Fixed] " + e.toString());
-                        }
-                        else {
-                            //System.out.println("[Fix Fail] " + e.toString());
-                        }
-                    }
-                }
+                cIB(i, graph, node, endNode);
+                
             }
         }
     }
-
-    private void fix(RTTgraph graph){
-        System.out.println("[RTTmining] fixing graph...");
-
+    private static void fG(RTTgraph graph){
         for(RTTnode node:graph.nodesByType(RTTnode.BranchNode)){
             ArrayList<RTTedge> incoming = graph.edgesEndWith(node);
             ArrayList<RTTedge> outcoming = graph.edgesStartWith(node);
@@ -239,6 +245,12 @@ public class RTTmining {
                 graph.edges().remove(outcoming.get(0));
             }
         }
+    }
+
+    private void fix(RTTgraph graph){
+        System.out.println("[RTTmining] fixing graph...");
+        fG(graph);
+        
 
         for(RTTnode node:graph.nodesByType(RTTnode.JoinNode)){
             ArrayList<RTTedge> incoming = graph.edgesEndWith(node);

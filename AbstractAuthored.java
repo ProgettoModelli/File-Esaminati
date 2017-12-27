@@ -5,6 +5,10 @@ import java.net.URL;
 
 import org.deckfour.uitopia.api.model.Author;
 
+/**
+ * 
+ * @author Utente
+ */
 public class AbstractAuthored {
 
 	public Author getAuthor() {

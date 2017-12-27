@@ -102,12 +102,12 @@ public class InclassMethodTest {
 	}
 
 	/**
-	 * @param scriptFileName
-	 * @return contents of the file at the given scriptFileName
+	 * @param "scriptFileName"
+	 * @return contents of the file at the given "scriptFileName"
 	 * @throws IOException
 	 */
 	private static String readFile(String scriptFileName) throws IOException {
-		InputStream is = new FileInputStream(scriptFileName);
+		InputStream is = new FileInputStream("scriptFileName");
 		String result = readWholeStream(is);
 		is.close();
 		return result;
@@ -125,9 +125,12 @@ public class InclassMethodTest {
 		StringBuffer result = new StringBuffer();
 		int c;
 
-		while ((c = reader.read()) != -1) {
+		c=reader.read();
+		while (c != -1) {
 			result.append((char) c);
+			c=reader.read();
 		}
+
 		return result.toString();
 	}
 

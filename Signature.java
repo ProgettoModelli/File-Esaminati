@@ -3,6 +3,10 @@ package org.processmining.contexts.scripting;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * 
+ * @author Utente
+ */
 public class Signature {
 
 	private final String name;

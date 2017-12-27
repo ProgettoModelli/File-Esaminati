@@ -3,6 +3,10 @@ package org.processmining.contexts.test;
 import org.processmining.contexts.cli.CLI;
 import org.processmining.contexts.test.factory.FactoryTest;
 
+/**
+ * 
+ * @author Utente
+ */
 public class StandardScriptTest {
 	
 	private String testScript;

@@ -102,6 +102,8 @@ public class PromTestException extends Exception {
 		sb.append("============================================================\n");
 		sb.append("Number of errors: "+errors.size()+"\n");
 		sb.append("============================================================\n");
+                final StringWriter result = new StringWriter();
+		final PrintWriter printWriter = new PrintWriter(result);
 		for (WrappedException error : errors) {
 			if (error.test != null)
 				sb.append(getTestName(error.test)+"\n");
@@ -111,8 +113,7 @@ public class PromTestException extends Exception {
 			sb.append("--- EXCEPTION ----------------------------------------------\n");
 			sb.append(error.thrown.toString()+"\n");
 			sb.append("--- stack trace --------------------------------------------\n");
-		    final StringWriter result = new StringWriter();
-		    final PrintWriter printWriter = new PrintWriter(result);
+		   
 		    error.thrown.printStackTrace(printWriter);
 			sb.append(result.toString()+"\n");
 			sb.append("============================================================\n");

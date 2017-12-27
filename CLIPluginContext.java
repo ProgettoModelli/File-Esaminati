@@ -8,6 +8,10 @@ import org.processmining.framework.plugin.PluginContext;
 import org.processmining.framework.plugin.Progress;
 import org.processmining.framework.plugin.impl.AbstractPluginContext;
 
+/**
+ * 
+ * @author Utente
+ */
 public class CLIPluginContext extends AbstractPluginContext {
 
 	private final Executor executor;

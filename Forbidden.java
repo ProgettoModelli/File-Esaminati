@@ -1,5 +1,9 @@
 package org.processmining.plugins.cnmining;
 
+/**
+ * 
+ * @author Utente
+ */
 public class Forbidden
 {
 	private String b;
@@ -10,6 +14,32 @@ public class Forbidden
 		this.b = b;
 		this.a = a;
 	}
+        
+        public boolean eP1(Forbidden other){
+           if (this.a == null)
+		{
+			if (other.a != null) {
+				return false;
+			}
+		}
+		else if (!this.a.equals(other.a)) {
+			return false;
+		}
+            return true;
+        }
+        
+        public boolean ep2(Forbidden other){
+		if (this.b == null)
+		{
+			if (other.b != null) {
+				return false;
+			}
+		}
+		else if (!this.b.equals(other.b)) {
+			return false;
+		}
+            return true;
+        }
   
 	public boolean equals(Object obj)
 	{
@@ -23,24 +53,10 @@ public class Forbidden
 			return false;
 		}
 		Forbidden other = (Forbidden)obj;
-		if (this.a == null)
-		{
-			if (other.a != null) {
-				return false;
-			}
-		}
-		else if (!this.a.equals(other.a)) {
-			return false;
-		}
-		if (this.b == null)
-		{
-			if (other.b != null) {
-				return false;
-			}
-		}
-		else if (!this.b.equals(other.b)) {
-			return false;
-		}
+                if(!eP1(other)) return false;
+                
+                if(!ep2(other)) return false;
+                
 		return true;
 	}
   

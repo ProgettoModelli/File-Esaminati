@@ -6,6 +6,10 @@ import com.carrotsearch.hppc.ObjectArrayList;
  * Questa classe funge da contenitore dei vincoli 
  */
 
+/**
+ * 
+ * @author Utente
+ */
 public class ConstraintsManager {
 
     public ObjectArrayList<Forbidden> 

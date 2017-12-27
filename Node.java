@@ -4,6 +4,10 @@ import com.carrotsearch.hppc.IntArrayList;
 import com.carrotsearch.hppc.IntOpenHashSet;
 import com.carrotsearch.hppc.ObjectIntOpenHashMap;
 
+/**
+ * 
+ * @author Utente
+ */
 public class Node
 {
 	ObjectIntOpenHashMap<IntOpenHashSet> output = new ObjectIntOpenHashMap<IntOpenHashSet>();

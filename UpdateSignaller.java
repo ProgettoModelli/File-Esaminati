@@ -7,6 +7,10 @@ import java.util.List;
 
 import org.deckfour.uitopia.api.event.UpdateListener;
 
+/**
+ * 
+ * @author Utente
+ */
 public class UpdateSignaller {
 
 	private final List<UpdateListener> listeners = new ArrayList<UpdateListener>();

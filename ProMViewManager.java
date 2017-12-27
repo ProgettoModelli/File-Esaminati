@@ -23,6 +23,10 @@ import org.processmining.framework.plugin.PluginParameterBinding;
 import org.processmining.framework.plugin.ProMCanceller;
 import org.processmining.framework.util.Pair;
 
+/**
+ * 
+ * @author Utente
+ */
 public class ProMViewManager extends UpdateSignaller implements ViewManager {
 
 	private static ProMViewManager instance = null;
@@ -38,16 +42,21 @@ public class ProMViewManager extends UpdateSignaller implements ViewManager {
 			registerResourceType(type);
 		}
 	}
+        
+        public void rRTP1(Set<Pair<Integer, PluginParameterBinding>> visualizers, ResourceType type){
+            for (Pair<Integer, PluginParameterBinding> binding : visualizers) {
+			viewClasses.get(type.getTypeClass()).add(new ProMViewType(this, type, binding));
+		}
+        }
 
-	public void registerResourceType(final ResourceType type) {
+	private void registerResourceType(final ResourceType type) {
 		viewClasses.put(type.getTypeClass(), new ArrayList<ViewType>(0));
 		Set<Pair<Integer, PluginParameterBinding>> visualizers = context.getPluginManager().find(Visualizer.class,
 				JComponent.class, UIPluginContext.class, true, false, true, type.getTypeClass());
 		Set<Pair<Integer, PluginParameterBinding>> cancellableVisualizers = context.getPluginManager().find(Visualizer.class,
 				JComponent.class, UIPluginContext.class, true, false, true, type.getTypeClass(), ProMCanceller.class);
-		for (Pair<Integer, PluginParameterBinding> binding : visualizers) {
-			viewClasses.get(type.getTypeClass()).add(new ProMViewType(this, type, binding));
-		}
+		rRTP1(visualizers, type);
+                
 		for (Pair<Integer, PluginParameterBinding> binding : cancellableVisualizers) {
 			viewClasses.get(type.getTypeClass()).add(new ProMViewType(this, type, binding));
 		}
@@ -70,9 +79,9 @@ public class ProMViewManager extends UpdateSignaller implements ViewManager {
 		});
 	}
 
-	public static ProMViewManager initialize(UIContext context) {
+	public static ProMViewManager initialize(UIContext contesto) {
 		if (instance == null) {
-			instance = new ProMViewManager(context);
+			instance = new ProMViewManager(contesto);
 		}
 		return instance;
 	}

@@ -3,6 +3,10 @@ package org.processmining.contexts.uitopia.model;
 import org.deckfour.uitopia.api.model.Category;
 import org.processmining.framework.plugin.annotations.PluginCategory;
 
+/**
+ * 
+ * @author Utente
+ */
 public class ProMCategory implements Category {
 
 	private PluginCategory c;

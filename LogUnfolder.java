@@ -14,12 +14,18 @@ import org.deckfour.xes.model.XEvent;
 import org.deckfour.xes.model.XLog;
 import org.deckfour.xes.model.XTrace;
 
+/**
+ * 
+ * @author Utente
+ */
 public class LogUnfolder
 {
 	public static void aggiungiAttivitaFittizia(XLog xlog)
 	{
 		XFactory factory = (XFactory)XFactoryRegistry.instance().currentDefault();
-		for (int i = 0; i < xlog.size(); i++)
+
+		int xlogSize = xlog.size();
+		for (int i = 0; i < xlogSize; i++)
 		{
 			XTrace trace = (XTrace)xlog.get(i);
 			XEvent activity_first = (XEvent)trace.get(0);
@@ -51,25 +57,11 @@ public class LogUnfolder
 			}
 			trace.add(event_last);
 		}
+                
+                
 	}
-  
-	public static UnfoldResult unfold(XLog log) throws Exception
-	{
-		UnfoldResult result = new UnfoldResult();
-    
-		int count = 0;
-		
-    	for (int i = 0; i < log.size(); i++)
-		{
-			XTrace trace = (XTrace)log.get(i);
-			String traccia = trace.getAttributes().get("concept:name") + " # " + i;
-			if (!result.traccia_attivita.containsKey(traccia))
-			{
-				ObjectArrayList<String> lista = new ObjectArrayList<String>();
-				lista.trimToSize();
-				result.traccia_attivita.put(traccia, lista);
-			}
-			for (XEvent activity : trace)
+        public static void uF(XTrace trace, UnfoldResult result, String traccia){
+            for (XEvent activity : trace)
 			{
 				String nome_attivita = activity.getAttributes().get("concept:name") + "#" + String.format("%04d", new Object[] { Integer.valueOf(0) });
 				if (!(result.traccia_attivita.get(traccia)).contains(nome_attivita))
@@ -105,6 +97,27 @@ public class LogUnfolder
 					(result.attivita_tracce.get(nome_attivita)).add(traccia);
 				}
 			}
+        }
+  
+	public static UnfoldResult unfold(XLog log) throws Exception
+	{
+		UnfoldResult result = new UnfoldResult();
+    
+		int count = 0;
+		int logSize = log.size();
+
+    	for (int i = 0; i < logSize; i++)
+		{
+			XTrace trace = (XTrace)log.get(i);
+			String traccia = trace.getAttributes().get("concept:name") + " # " + i;
+			if (!result.traccia_attivita.containsKey(traccia))
+			{
+				ObjectArrayList<String> lista = new ObjectArrayList<String>();
+				lista.trimToSize();
+				result.traccia_attivita.put(traccia, lista);
+			}
+                        uF(trace, result, traccia);
+			
 		}
 		Object[] keys = result.attivita_tracce.keys;
     

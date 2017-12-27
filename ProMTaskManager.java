@@ -20,6 +20,10 @@ import org.processmining.framework.plugin.PluginContext;
 import org.processmining.framework.plugin.PluginContextID;
 import org.processmining.framework.plugin.events.PluginLifeCycleEventListener;
 
+/**
+ * 
+ * @author Utente
+ */
 public class ProMTaskManager implements TaskManager<ProMTask, ProMPOResource>, PluginLifeCycleEventListener {
 
 	private final Set<ProMTask> tasks = new HashSet<ProMTask>();
@@ -34,9 +38,9 @@ public class ProMTaskManager implements TaskManager<ProMTask, ProMPOResource>, P
 
 	private static ProMTaskManager instance = null;
 
-	public static ProMTaskManager initialize(UIContext context) {
+	public static ProMTaskManager initialize(UIContext contesto) {
 		if (instance == null) {
-			instance = new ProMTaskManager(context);
+			instance = new ProMTaskManager(contesto);
 		}
 		return instance;
 	}
@@ -77,56 +81,56 @@ public class ProMTaskManager implements TaskManager<ProMTask, ProMPOResource>, P
 		return new ArrayList<ProMTask>(tasks);
 	}
 
-	public void pluginCancelled(PluginContext context) {
+	public void pluginCancelled(PluginContext contesto) {
 		synchronized (context2task) {
 			activeTasks.remove(context2task.get(context.getID()));
 			context.getParentContext().deleteChild(context);
 		}
 	}
 
-	public void pluginCompleted(PluginContext context) {
+	public void pluginCompleted(PluginContext contesto) {
 		synchronized (context2task) {
 			activeTasks.remove(context2task.get(context.getID()));
 			context.getParentContext().deleteChild(context);
 		}
 	}
 
-	public void pluginCreated(PluginContext context) {
+	public void pluginCreated(PluginContext contesto) {
 		synchronized (context2task) {
 			tasks.add(context2task.get(context.getID()));
 		}
 	}
 
-	public void pluginDeleted(PluginContext context) {
+	public void pluginDeleted(PluginContext contesto) {
 		synchronized (context2task) {
 			activeTasks.remove(context2task.get(context.getID()));
 			context.getParentContext().deleteChild(context);
 		}
 	}
 
-	public void pluginFutureCreated(PluginContext context) {
+	public void pluginFutureCreated(PluginContext contesto) {
 		// Gracefully ignore
 	}
 
-	public void pluginResumed(PluginContext context) {
+	public void pluginResumed(PluginContext contesto) {
 		synchronized (context2task) {
 			activeTasks.add(context2task.get(context.getID()));
 		}
 	}
 
-	public void pluginStarted(PluginContext context) {
+	public void pluginStarted(PluginContext contesto) {
 		synchronized (context2task) {
 			activeTasks.add(context2task.get(context.getID()));
 		}
 	}
 
-	public void pluginSuspended(PluginContext context) {
+	public void pluginSuspended(PluginContext contesto) {
 		synchronized (context2task) {
 			activeTasks.remove(context2task.get(context.getID()));
 		}
 	}
 
-	public void pluginTerminatedWithError(PluginContext context, Throwable t) {
+	public void pluginTerminatedWithError(PluginContext contesto, Throwable t) {
 		synchronized (context2task) {
 			activeTasks.remove(context2task.get(context.getID()));
 			context.getParentContext().deleteChild(context);

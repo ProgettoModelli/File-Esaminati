@@ -25,6 +25,10 @@ import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 
+/**
+ * 
+ * @author Utente
+ */
 public class Main {
 
     public static void main(String[] args){
@@ -121,7 +125,8 @@ public class Main {
     }
 
     static void printLog(XLog log){
-        for (int i = 0; i < log.size(); i++) {
+        int logSize = log.size();
+        for (int i = 0; i < logSize; i++) {
             XTrace trace = log.get(i);
             System.out.println("trace: " + XConceptExtension.instance().extractName(trace));
             for (XEvent activity : trace)
@@ -176,9 +181,9 @@ public class Main {
                     }
             );
         }
-        catch (IOException ioe)
+        catch (IOException e)
         {
-            ioe.printStackTrace();
+            System.out.println("errore");
         }
     }
 

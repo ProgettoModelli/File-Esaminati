@@ -2,6 +2,10 @@ package org.processmining.plugins.cnmining;
 
 import java.util.LinkedList;
 
+/**
+ * 
+ * @author Utente
+ */
 public class FakeDependency
 {
 	private final int id_attivita_x;

@@ -7,6 +7,10 @@ import java.util.Map;
 
 import org.deckfour.uitopia.api.model.Author;
 
+/**
+ * 
+ * @author Utente
+ */
 public class ProMResourceTypeInformation {
 
 	private final static Map<Class<?>, ResourceTypeInfo> typeInfo = new HashMap<Class<?>, ResourceTypeInfo>();

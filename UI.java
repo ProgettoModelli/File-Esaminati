@@ -4,6 +4,8 @@ import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -25,6 +27,10 @@ import org.processmining.framework.plugin.annotations.Bootable;
 import org.processmining.framework.plugin.annotations.Plugin;
 import org.processmining.framework.util.CommandLineArgumentList;
 
+/**
+ * 
+ * @author Utente
+ */
 public class UI {
 
 	@Plugin(name = "UITopia", parameterLabels = {}, returnLabels = {}, returnTypes = {}, userAccessible = false)
@@ -42,9 +48,9 @@ public class UI {
 		controller.getMainView().getWorkspaceView().showFavorites();
 
 		globalContext.startup();
-
+                
 		for (String cmd : commandlineArguments) {
-			File f = new File(cmd);
+			File f = metodoManutenzione(cmd);
 			if (f.exists() && f.isFile()) {
 				globalContext.getResourceManager().importResource(null, f);
 			}
@@ -52,31 +58,13 @@ public class UI {
 
 		return controller;
 	}
+        
+        private File metodoManutenzione(String cmd ){
+            return new File(cmd);
+        }
 
-	public static void main(String[] args) throws Exception {
-
-		if (Boot.AUTO_UPDATE.equals("auto") || Boot.AUTO_UPDATE.equals("user") || !Boot.isLatestReleaseInstalled()) {
-			Boot.setReleaseInstalled("", "");
-			PMFrame frame = (PMFrame) Boot.boot(PMFrame.class);
-			frame.setIconImage(ImageLoader.load("prom_icon_32x32.png"));
-			// Now select the release package
-			PMPackage releasePackage = frame.getController().selectPackage(Boot.RELEASE_PACKAGE);
-			if (releasePackage == null) {
-				Boot.boot(UI.class, UIPluginContext.class, args);
-				throw new Exception("Cannot find release package defined in ProM.ini file: " + Boot.RELEASE_PACKAGE
-						+ ". Continuing to load ProM.");
-			}
-
-			if (releasePackage.getStatus() == PMStatus.TOUNINSTALL) {
-
-				int option = JOptionPane.NO_OPTION;
-
-				if (Boot.AUTO_UPDATE.equals("auto") || Boot.AUTO_UPDATE.equals("user")) {
-					/*
-					 * HV: Check for packages to install or update.
-					 */
-					PMController pmController = frame.getController();
-					if (Boot.AUTO_UPDATE.equals("user")) {
+        public static int mP1(PMFrame frame, PMController pmController, int option){
+            if (Boot.AUTO_UPDATE.equals("user")) {
 						if (!pmController.getToInstallPackages().isEmpty()) {
 							if (!pmController.getToUpdatePackages().isEmpty()) {
 								option = JOptionPane.showConfirmDialog(frame,
@@ -95,7 +83,28 @@ public class UI {
 					} else { // auto
 						option = JOptionPane.YES_OPTION;
 					}
-					if (option == JOptionPane.YES_OPTION) {
+            return option;
+        }
+        
+        public static void mP2(int option, String[] args){
+            if (option == JOptionPane.NO_OPTION) {
+					// Package is upToDate and installed.
+					// Do not show package manager and start ProM
+					Boot.setLatestReleaseInstalled();
+					Boot.boot(UI.class, UIPluginContext.class, args);
+				}
+        }
+        
+        public static void mP0(PMPackage releasePackage, String[] args){
+            if (releasePackage == null) {
+				Boot.boot(UI.class, UIPluginContext.class, args);
+				throw new Exception("Cannot find release package defined in ProM.ini file: " + Boot.RELEASE_PACKAGE
+						+ ". Continuing to load ProM.");
+			}
+        }
+        
+        public static void mP3(int option, PMFrame frame, String[] args, PMController pmController){
+            if (option == JOptionPane.YES_OPTION) {
 						// Start listening
 						UIPackageManagerListener listener = new UIPackageManagerListener(frame, args);
 						PackageManager.getInstance().addListener(listener);
@@ -111,20 +120,49 @@ public class UI {
 						// ProM will be started as soon as the package manager finishes.
 
 						synchronized (listener) {
-							while (!listener.isDone()) {
-								listener.wait();
+							boolean completed;
+							completed=listener.isDone();
+							while (!completed) {
+                                                            try {
+                                                                listener.wait();
+                                                            } catch (InterruptedException ex) {
+                                                                Logger.getLogger(UI.class.getName()).log(Level.SEVERE, null, ex);
+                                                            }
+								completed=listener.isDone();
 							}
 						}
 
 					}
-				}
+        }
+        
+	public static void main(String[] args) throws Exception {
 
-				if (option == JOptionPane.NO_OPTION) {
-					// Package is upToDate and installed.
-					// Do not show package manager and start ProM
-					Boot.setLatestReleaseInstalled();
-					Boot.boot(UI.class, UIPluginContext.class, args);
+		if (Boot.AUTO_UPDATE.equals("auto") || Boot.AUTO_UPDATE.equals("user") || !Boot.isLatestReleaseInstalled()) {
+			Boot.setReleaseInstalled("", "");
+			PMFrame frame = (PMFrame) Boot.boot(PMFrame.class);
+			frame.setIconImage(ImageLoader.load("prom_icon_32x32.png"));
+			// Now select the release package
+			PMPackage releasePackage = frame.getController().selectPackage(Boot.RELEASE_PACKAGE);
+                        mP0(releasePackage, args);
+			
+
+			if (releasePackage.getStatus() == PMStatus.TOUNINSTALL) {
+
+				int option = JOptionPane.NO_OPTION;
+				if (Boot.AUTO_UPDATE.equals("auto") || Boot.AUTO_UPDATE.equals("user")) {
+					/*
+					 * HV: Check for packages to install or update.
+					 */
+					PMController pmController = frame.getController();
+                                        mP1(frame, pmController, option);
+                                        
+                                        mP3(option, frame, args, pmController);
+					
+					
 				}
+                                
+                                mP2(option, args);
+				
 
 			} else {
 
@@ -141,8 +179,11 @@ public class UI {
 				// ProM will be started as soon as the package manager finishes.
 
 				synchronized (listener) {
-					while (!listener.isDone()) {
+					boolean completed;
+					completed=listener.isDone();
+					while (!completed) {
 						listener.wait();
+						completed=listener.isDone();
 					}
 				}
 
@@ -198,7 +239,7 @@ class UIPackageManagerListener implements PackageManagerListener {
 	public void exception(Throwable t) {
 	}
 
-	public void exception(String exception) {
+	public void exception(String eccezione) {
 	}
 
 	public void finishedInstall(String packageName, File folder, PackageDescriptor pack) {
@@ -238,7 +279,7 @@ class UIPackageManagerListener implements PackageManagerListener {
 			Boot.boot(UI.class, UIPluginContext.class, args);
 			Boot.setLatestReleaseInstalled();
 		} catch (Exception e1) {
-			throw new RuntimeException(e1);
+			throw new RuntimeException("error");
 		} finally {
 			frame.setVisible(false);
 		}
