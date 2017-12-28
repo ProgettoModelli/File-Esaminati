@@ -21,142 +21,146 @@ import org.processmining.framework.plugin.PluginContextID;
 import org.processmining.framework.plugin.events.PluginLifeCycleEventListener;
 
 /**
- * 
  * @author Utente
  */
 public class ProMTaskManager implements TaskManager<ProMTask, ProMPOResource>, PluginLifeCycleEventListener {
 
-	private final Set<ProMTask> tasks = new HashSet<ProMTask>();
-	private final Set<ProMTask> activeTasks = new HashSet<ProMTask>();
-	private final UIContext context;
+    private final Set<ProMTask> tasks = new HashSet<ProMTask>();
+    private final Set<ProMTask> activeTasks = new HashSet<ProMTask>();
+    private final UIContext context;
 
-	private final Map<PluginContextID, ProMTask> context2task = new HashMap<PluginContextID, ProMTask>();
+    private final Map<PluginContextID, ProMTask> context2task = new HashMap<PluginContextID, ProMTask>();
 
-	private ProMTaskManager(UIContext context) {
-		this.context = context;
-	}
+    private ProMTaskManager(UIContext context) {
+        this.context = context;
+    }
 
-	private static ProMTaskManager instance = null;
+    private ProMTaskManager(){
+        context = null;
+    }
 
-	public static ProMTaskManager initialize(UIContext contesto) {
-		if (instance == null) {
-			instance = new ProMTaskManager(contesto);
-		}
-		return instance;
-	}
+    private static ProMTaskManager instance = new ProMTaskManager();
 
-	public ProMTask execute(Action action, java.util.List<Collection<? extends Resource>> parameterValues,
-			TaskListener listener) throws Exception {
 
-		assert (action instanceof ProMAction);
-		java.util.List<Collection<ProMPOResource>> list = new ArrayList<Collection<ProMPOResource>>();
-		for (Collection<? extends Resource> v : parameterValues) {
-			Collection<ProMPOResource> l = new ArrayList<ProMPOResource>();
-			for (Resource r : v) {
-				if (!(r instanceof ProMPOResource)) {
-					throw new Exception("Cannot instantiate plugins on Connections");
-				}
-				l.add((ProMPOResource) r);
-			}
-			list.add(l);
-		}
+    public static ProMTaskManager initialize(UIContext contesto) {
+        if (instance == null) {
+            instance = new ProMTaskManager(contesto);
+        }
+        return instance;
+    }
 
-		UIPluginContext pluginContext = context.getMainPluginContext().createChildContext(action.getName());
+    public ProMTask execute(Action action, java.util.List<Collection<? extends Resource>> parameterValues,
+                            TaskListener listener) throws Exception {
 
-		pluginContext.getPluginLifeCycleEventListeners().add(this);
+        assert (action instanceof ProMAction);
+        java.util.List<Collection<ProMPOResource>> list = new ArrayList<Collection<ProMPOResource>>();
+        for (Collection<? extends Resource> v : parameterValues) {
+            Collection<ProMPOResource> l = new ArrayList<ProMPOResource>();
+            for (Resource r : v) {
+                if (!(r instanceof ProMPOResource)) {
+                    throw new Exception("Cannot instantiate plugins on Connections");
+                }
+                l.add((ProMPOResource) r);
+            }
+            list.add(l);
+        }
 
-		ProMTask task;
-		synchronized (context2task) {
-			task = new ProMTask(context, (ProMAction) action, list, pluginContext, listener);
-			context2task.put(pluginContext.getID(), task);
-		}
-		return task;
-	}
+        UIPluginContext pluginContext = context.getMainPluginContext().createChildContext(action.getName());
 
-	public java.util.List<ProMTask> getActiveTasks() {
-		return new ArrayList<ProMTask>(activeTasks);
-	}
+        pluginContext.getPluginLifeCycleEventListeners().add(this);
 
-	public java.util.List<ProMTask> getAllTasks() {
-		return new ArrayList<ProMTask>(tasks);
-	}
+        ProMTask task;
+        synchronized (context2task) {
+            task = new ProMTask(context, (ProMAction) action, list, pluginContext, listener);
+            context2task.put(pluginContext.getID(), task);
+        }
+        return task;
+    }
 
-	public void pluginCancelled(PluginContext contesto) {
-		synchronized (context2task) {
-			activeTasks.remove(context2task.get(context.getID()));
-			context.getParentContext().deleteChild(context);
-		}
-	}
+    public java.util.List<ProMTask> getActiveTasks() {
+        return new ArrayList<ProMTask>(activeTasks);
+    }
 
-	public void pluginCompleted(PluginContext contesto) {
-		synchronized (context2task) {
-			activeTasks.remove(context2task.get(context.getID()));
-			context.getParentContext().deleteChild(context);
-		}
-	}
+    public java.util.List<ProMTask> getAllTasks() {
+        return new ArrayList<ProMTask>(tasks);
+    }
 
-	public void pluginCreated(PluginContext contesto) {
-		synchronized (context2task) {
-			tasks.add(context2task.get(context.getID()));
-		}
-	}
+    public void pluginCancelled(PluginContext contesto) {
+        synchronized (context2task) {
+            activeTasks.remove(context2task.get(context.getID()));
+            context.getParentContext().deleteChild(context);
+        }
+    }
 
-	public void pluginDeleted(PluginContext contesto) {
-		synchronized (context2task) {
-			activeTasks.remove(context2task.get(context.getID()));
-			context.getParentContext().deleteChild(context);
-		}
-	}
+    public void pluginCompleted(PluginContext contesto) {
+        synchronized (context2task) {
+            activeTasks.remove(context2task.get(context.getID()));
+            context.getParentContext().deleteChild(context);
+        }
+    }
 
-	public void pluginFutureCreated(PluginContext contesto) {
-		// Gracefully ignore
-	}
+    public void pluginCreated(PluginContext contesto) {
+        synchronized (context2task) {
+            tasks.add(context2task.get(context.getID()));
+        }
+    }
 
-	public void pluginResumed(PluginContext contesto) {
-		synchronized (context2task) {
-			activeTasks.add(context2task.get(context.getID()));
-		}
-	}
+    public void pluginDeleted(PluginContext contesto) {
+        synchronized (context2task) {
+            activeTasks.remove(context2task.get(context.getID()));
+            context.getParentContext().deleteChild(context);
+        }
+    }
 
-	public void pluginStarted(PluginContext contesto) {
-		synchronized (context2task) {
-			activeTasks.add(context2task.get(context.getID()));
-		}
-	}
+    public void pluginFutureCreated(PluginContext contesto) {
+        // Gracefully ignore
+    }
 
-	public void pluginSuspended(PluginContext contesto) {
-		synchronized (context2task) {
-			activeTasks.remove(context2task.get(context.getID()));
-		}
-	}
+    public void pluginResumed(PluginContext contesto) {
+        synchronized (context2task) {
+            activeTasks.add(context2task.get(context.getID()));
+        }
+    }
 
-	public void pluginTerminatedWithError(PluginContext contesto, Throwable t) {
-		synchronized (context2task) {
-			activeTasks.remove(context2task.get(context.getID()));
-			context.getParentContext().deleteChild(context);
-		}
-	}
+    public void pluginStarted(PluginContext contesto) {
+        synchronized (context2task) {
+            activeTasks.add(context2task.get(context.getID()));
+        }
+    }
 
-	public boolean isActionableResource(Resource r) {
-		return r instanceof ProMPOResource;
-	}
-	
-	public boolean isActionableResource(java.util.List<Resource> resources) {
-		for(Resource r : resources){
-			if(!(r instanceof ProMPOResource)){
-				return false;
-			}
-		}
-		return true;
-	}
+    public void pluginSuspended(PluginContext contesto) {
+        synchronized (context2task) {
+            activeTasks.remove(context2task.get(context.getID()));
+        }
+    }
 
-	public boolean isAnActionableResource(java.util.List<Resource> resources) {
-		for(Resource r : resources){
-			if(r instanceof ProMPOResource){
-				return true;
-			}
-		}
-		return false;
-	}
+    public void pluginTerminatedWithError(PluginContext contesto, Throwable t) {
+        synchronized (context2task) {
+            activeTasks.remove(context2task.get(context.getID()));
+            context.getParentContext().deleteChild(context);
+        }
+    }
+
+    public boolean isActionableResource(Resource r) {
+        return r instanceof ProMPOResource;
+    }
+
+    public boolean isActionableResource(java.util.List<Resource> resources) {
+        for (Resource r : resources) {
+            if (!(r instanceof ProMPOResource)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isAnActionableResource(java.util.List<Resource> resources) {
+        for (Resource r : resources) {
+            if (r instanceof ProMPOResource) {
+                return true;
+            }
+        }
+        return false;
+    }
 
 }

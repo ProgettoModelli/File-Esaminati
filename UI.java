@@ -35,7 +35,7 @@ public class UI {
 
 	@Plugin(name = "UITopia", parameterLabels = {}, returnLabels = {}, returnTypes = {}, userAccessible = false)
 	@Bootable
-	public Object main(CommandLineArgumentList commandlineArguments) {
+	public UITopiaController other_main(CommandLineArgumentList commandlineArguments) {
 		UIContext globalContext;
 		globalContext = new UIContext();
 		globalContext.initialize();
@@ -122,14 +122,16 @@ public class UI {
 						synchronized (listener) {
 							boolean completed;
 							completed=listener.isDone();
+                                                        try {
 							while (!completed) {
-                                                            try {
+                                                            
                                                                 listener.wait();
-                                                            } catch (InterruptedException ex) {
-                                                                Logger.getLogger(UI.class.getName()).log(Level.SEVERE, null, ex);
-                                                            }
+                                                            
 								completed=listener.isDone();
 							}
+                                                        } catch (InterruptedException ex) {
+                                                                Logger.getLogger(UI.class.getName()).log(Level.SEVERE, null, ex);
+                                                            }
 						}
 
 					}

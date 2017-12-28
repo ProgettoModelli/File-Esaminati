@@ -3,6 +3,7 @@ package org.processmining.contexts.uitopia.model;
 import java.util.Collection;
 import java.util.List;
 
+import org.processmining.contexts.uitopia.model.ProMResource;
 import org.deckfour.uitopia.api.model.Action;
 import org.deckfour.uitopia.api.model.ResourceType;
 import org.processmining.contexts.uitopia.UIContext;
@@ -28,7 +29,7 @@ public class ProMPOResource extends ProMResource<ProvidedObjectID> {
 				r.parents.remove(this);
 			}
 		} catch (ProvidedObjectDeletedException e) {
-			// THat's fine
+			System.out.println("errore");    // THat's fine
 		}
 	}
 
@@ -57,7 +58,7 @@ public class ProMPOResource extends ProMResource<ProvidedObjectID> {
 	 * 
 	 * @return The object carried by this resource.
 	 */
-	public Object getInstance() {
+	public ProMResource getInstance() {
 		try {
 			return context.getProvidedObjectManager().getProvidedObjectObject(id, true);
 		} catch (ProvidedObjectDeletedException e) {

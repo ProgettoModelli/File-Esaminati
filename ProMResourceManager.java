@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,7 +70,7 @@ public class ProMResourceManager extends UpdateSignaller implements ResourceMana
 
     private static final String FAVORITEEXPORT = "favorite export for type ";
 
-    private static ProMResourceManager instance = null;
+    private static ProMResourceManager instance = new ProMResourceManager();
 
     private final Map<Class<?>, ProMResourceType> resourceClasses = new ConcurrentHashMap<Class<?>, ProMResourceType>();
     private final Map<ProMID, ProMResource<?>> resources = new ConcurrentHashMap<ProMID, ProMResource<?>>();
@@ -95,6 +95,12 @@ public class ProMResourceManager extends UpdateSignaller implements ResourceMana
             addType(type);
         }
     }
+
+    private ProMResourceManager(){
+        context = null;
+        preferences = null;
+    }
+
     private ProMResourceManager(UIContext context) {
 
         this.context = context;
@@ -628,29 +634,8 @@ public class ProMResourceManager extends UpdateSignaller implements ResourceMana
                         importContext, "Importing " + binding.getPlugin().getName());
     }
 
-    private boolean importResourceNotInEDT(final PluginParameterBinding binding, final File... files) {
-        if (EventQueue.isDispatchThread()) {
-            System.err.println("Method should never be called from EDT");
-            return false;
-        }
-        /*
-         * Synchronize on the provided object manager to prevent multiple imports 
-         * talking at the same time to this manager.
-         */
-        synchronized (context.getProvidedObjectManager()) {
-            for (File f : files) {
-                UIPluginContext importContext = context.getMainPluginContext()
-                        .createChildContext("Opening file with " + binding.getPlugin().getName());
-                importContext.getPluginLifeCycleEventListeners().add(this);
-
-                ProgressOverlayDialog progress = metodoManutenzione2(importContext,binding);
-                context.getController().getMainView().showOverlay(progress);
-//			Thread.yield();
-
-                PluginExecutionResult result = binding.invoke(importContext, f);
-                context.getProvidedObjectManager().createProvidedObjects(importContext);
-
-                try {
+    private boolean erroriSincronizzazioni(UIPluginContext importContext, PluginExecutionResult result, final File... files){
+        try {
                     result.synchronize();
                 } catch (CancellationException e) {
                     context.getController().getMainView().hideOverlay();
@@ -677,9 +662,37 @@ public class ProMResourceManager extends UpdateSignaller implements ResourceMana
                 } finally {
                     importContext.getParentContext().deleteChild(importContext);
                 }
+        return true;
+    }
+    
+    private boolean importResourceNotInEDT(final PluginParameterBinding binding, final File... files) {
+        if (EventQueue.isDispatchThread()) {
+            System.err.println("Method should never be called from EDT");
+            return false;
+        }
+        /*
+         * Synchronize on the provided object manager to prevent multiple imports 
+         * talking at the same time to this manager.
+         */
+        synchronized (context.getProvidedObjectManager()) {
+            
+            for (File f : files) {
+                UIPluginContext importContext = context.getMainPluginContext()
+                        .createChildContext("Opening file with " + binding.getPlugin().getName());
+                importContext.getPluginLifeCycleEventListeners().add(this);
+
+                ProgressOverlayDialog progress = metodoManutenzione2(importContext,binding);
+                context.getController().getMainView().showOverlay(progress);
+//			Thread.yield();
+
+                PluginExecutionResult result = binding.invoke(importContext, f);
+                context.getProvidedObjectManager().createProvidedObjects(importContext);
+
+                if(!erroriSincronizzazioni(importContext, result, files))return false;
 
                 context.getController().getMainView().hideOverlay();
             }
+            
         }
         return true;
 
@@ -827,20 +840,25 @@ public class ProMResourceManager extends UpdateSignaller implements ResourceMana
                         Collections.<Collection<ProMPOResource>>emptyList());
     }
 
-    
+    private Class<?> controllaOggetto(ProvidedObjectID id){
+        Class<?> type;
+        try {
+                type = context.getProvidedObjectManager().getProvidedObjectType(id);
+            } catch (ProvidedObjectDeletedException e) {
+                // If the object has been deleted, try the next one
+                return null;
+            }
+        return type;
+    }
+     
     public void pluginCompleted(PluginContext pluginContext) {
         PluginExecutionResult result = pluginContext.getResult();
         int resultSize = result.getSize();
         
         for (int i = 0; i < resultSize; i++) {
             ProvidedObjectID id = result.getProvidedObjectID(i);
-            Class<?> type;
-            try {
-                type = context.getProvidedObjectManager().getProvidedObjectType(id);
-            } catch (ProvidedObjectDeletedException e) {
-                // If the object has been deleted, try the next one
-                continue;
-            }
+            Class<?> type = controllaOggetto(id);
+            if(type == null) continue;
             ResourceType resType = getResourceTypeFor(type);
             if (resType != null) {
                 ProMResource<?> res = metodoManutenzione2(resType ,id);
@@ -895,6 +913,7 @@ public class ProMResourceManager extends UpdateSignaller implements ResourceMana
             try {
                 conn = connectionManager.getConnection(id);
                 if (!conn.isRemoved()) {
+                    
                     // TODO
                     java.util.List<Collection<ProMPOResource>> values = new ArrayList<Collection<ProMPOResource>>();
                     for (Object o : conn.getObjects().baseSet()) {
@@ -913,7 +932,7 @@ public class ProMResourceManager extends UpdateSignaller implements ResourceMana
                     signalUpdate();
                 }
             } catch (ConnectionCannotBeObtained e) {
-                // do nothing
+                System.out.println("errore");    // do nothing
             }
         }
     }

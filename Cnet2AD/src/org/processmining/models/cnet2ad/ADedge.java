@@ -9,7 +9,13 @@ public class ADedge {
     private static int idCounter = 0;
 
     private ADnode beginNode, endNode;
+    /**
+     * public string
+     */
     public String id;
+    /**
+     * public 
+     */
     public String name;
 
     public ADedge(ADnode start, ADnode end){
@@ -38,6 +44,24 @@ public class ADedge {
 
     public void end(ADnode value){
         this.endNode = value;
+    }
+    
+    public String toJson(){
+        StringBuilder json = new StringBuilder("{");
+
+        json.append("from: \"");
+        json.append(this.begin().name);
+        json.append("\"");
+
+        json.append(", ");
+
+        json.append("to: \"");
+        json.append(this.end().name);
+        json.append("\"");
+
+        json.append("}");
+
+        return json.toString();
     }
 
     public String toXMI(){
@@ -79,23 +103,7 @@ public class ADedge {
         return xmi.toString();
     }
 
-    public String toJson(){
-        StringBuilder json = new StringBuilder("{");
-
-        json.append("from: \"");
-        json.append(this.begin().name);
-        json.append("\"");
-
-        json.append(", ");
-
-        json.append("to: \"");
-        json.append(this.end().name);
-        json.append("\"");
-
-        json.append("}");
-
-        return json.toString();
-    }
+    
 
     public String toString(){
         StringBuilder str = new StringBuilder("{ ");

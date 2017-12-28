@@ -107,9 +107,23 @@ public class InclassMethodTest {
 	 * @throws IOException
 	 */
 	private static String readFile(String scriptFileName) throws IOException {
-		InputStream is = new FileInputStream("scriptFileName");
-		String result = readWholeStream(is);
-		is.close();
+                InputStream is = null;
+                String result = "";
+                try{
+		is = new FileInputStream("scriptFileName");
+		result = readWholeStream(is);
+                } catch (Exception e){
+                    System.out.println("errore");
+                } finally {
+                    if(is != null){
+                        try{
+                            is.close();
+                        } catch (Exception e){
+                            System.out.println("errore");
+                        }
+                    }
+                }
+		
 		return result;
 	}
 
@@ -127,7 +141,7 @@ public class InclassMethodTest {
 
 		c=reader.read();
 		while (c != -1) {
-			result.append((char) c);
+			result.append(c);
 			c=reader.read();
 		}
 

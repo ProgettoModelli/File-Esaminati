@@ -149,5 +149,5 @@ public abstract class ProMResource<I extends ProMID> implements Resource {
 		return isDestroyed;
 	}
 
-	public abstract Object getInstance();
+	public abstract ProMResource getInstance();
 }

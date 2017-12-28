@@ -21,7 +21,7 @@ import org.processmining.contexts.uitopia.hub.ProMResourceManager;
 import org.processmining.framework.plugin.PluginDescriptor;
 import org.processmining.framework.plugin.PluginManager;
 import org.processmining.framework.plugin.PluginParameterBinding;
-import org.processmining.framework.util.Cast;
+
 
 /**
  * 
@@ -130,6 +130,7 @@ public class ProMAction implements Action, Comparable<ProMAction> {
 					try {
 						uri = new URL("http://www.processmining.org").toURI();
 					} catch (Exception e2) {
+                                            System.out.println("errore");    
 					}
 				}
 				return uri;

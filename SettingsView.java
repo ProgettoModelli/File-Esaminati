@@ -28,7 +28,7 @@ public class SettingsView {
 	private UIPluginContext context;
 	private XLog log;
 	
-	private static double sigmaLogNoise = 0.0D, fallFactor = 0.0D, relativeToBest = 0.0D;
+	private static double[] sLNfFrTB = {0.0D, 0.0D, 0.0D};
 	
 	public SettingsView(UIPluginContext context, XLog log){
 		this.context = context;
@@ -55,7 +55,7 @@ public class SettingsView {
 	    	{
 	    		int percentage = slider.getSlider().getValue();
 	        
-	    		SettingsView.sigmaLogNoise = (percentage / 100.0D);
+	    		SettingsView.sLNfFrTB[0] = (percentage / 100.0D);
 	    	}
 	    };
 	    
@@ -70,7 +70,7 @@ public class SettingsView {
 	    	public void stateChanged(ChangeEvent e)
 	    	{
 	    		int percentage = slider1.getSlider().getValue();
-	    		SettingsView.fallFactor = (percentage / 100.0D);
+	    		SettingsView.sLNfFrTB[1] = (percentage / 100.0D);
 	    	}
 	    };
 	    slider1.addChangeListener(listener1);
@@ -85,7 +85,7 @@ public class SettingsView {
 	    	{
 	    		int percentage = slider2.getSlider().getValue();
 	        
-	    		SettingsView.relativeToBest = (percentage / 100.0D);
+	    		SettingsView.sLNfFrTB[2] = (percentage / 100.0D);
 	    	}
 	    };
 	    slider2.addChangeListener(listener2);
@@ -114,10 +114,10 @@ public class SettingsView {
 	    
 	    s.constraintsEnabled = pannelloVincoli.areConstraintsEnabled();
 	    s.constraintsFilename = pannelloVincoli.getFilename();
-	    s.sigmaLogNoise = SettingsView.sigmaLogNoise;
+	    s.sigmaLogNoise = SettingsView.sLNfFrTB[0];
 	    s.logName = logName;
-	    s.fallFactor = SettingsView.fallFactor;
-	    s.relativeToBest = SettingsView.relativeToBest;
+	    s.fallFactor = SettingsView.sLNfFrTB[1];
+	    s.relativeToBest = SettingsView.sLNfFrTB[2];
 	    
 	    return s;
 	}

@@ -7,10 +7,12 @@ import java.util.List;
 /**
  * Utility class to collect all test scripts annotated in a given directory.
  * 
- * @author dfahland
+ * public field
  */
 public class AllStandardScriptTests {
-	
+	/**
+         * public
+         */
 	public static final String TESTSCRIPT_FILE_EXTENSION = "txt";
 
 	/**

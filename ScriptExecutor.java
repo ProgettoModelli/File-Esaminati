@@ -146,24 +146,8 @@ public class ScriptExecutor {
 						}
         }
         
-	private LinkedList<PluginDescriptor> workingPlugins() {
-		LinkedList<PluginDescriptor> workingPlugins = new LinkedList<PluginDescriptor>();
-
-		Set<Signature> foundSignatures = new HashSet<Signature>();
-		String nl = System.getProperty("line.separator");
-		int pluginIndex = 0;
-                // method signatures of this plugin
-		Set<Signature> thisPluginSignatures = new HashSet<Signature>();
-		PluginDescriptor[] plugins = context.getPluginManager().getAllPlugins();
-                StringBuffer init = new StringBuffer();
-		Interpreter pluginInterpreter = new Interpreter();
-		for (PluginDescriptor plugin : plugins)
-		{
-			if (Boot.VERBOSE == Level.ALL) System.out.println("checking "+plugin.getName());
-
-			
-			
-			try {
+        private LinkedList<PluginDescriptor> controlloPlugins(String nl, int pluginIndex, Set<Signature> foundSignatures, Set<Signature> thisPluginSignatures, PluginDescriptor plugin, LinkedList<PluginDescriptor> workingPlugins, Interpreter pluginInterpreter, StringBuffer init){
+            try {
 				
 				
 				pluginInterpreter.set("__main_context", context);
@@ -231,6 +215,27 @@ public class ScriptExecutor {
 				System.err.println("Missing class "+e.getMessage());
 				failedPlugins.addAll(thisPluginSignatures);
 			}
+            return workingPlugins;
+        }
+        
+	private LinkedList<PluginDescriptor> workingPlugins() {
+		LinkedList<PluginDescriptor> workingPlugins = new LinkedList<PluginDescriptor>();
+
+		Set<Signature> foundSignatures = new HashSet<Signature>();
+		String nl = System.getProperty("line.separator");
+		int pluginIndex = 0;
+                // method signatures of this plugin
+		Set<Signature> thisPluginSignatures = new HashSet<Signature>();
+		PluginDescriptor[] plugins = context.getPluginManager().getAllPlugins();
+                StringBuffer init = new StringBuffer();
+		Interpreter pluginInterpreter = new Interpreter();
+		for (PluginDescriptor plugin : plugins)
+		{
+			if (Boot.VERBOSE == Level.ALL) System.out.println("checking "+plugin.getName());
+
+			workingPlugins = controlloPlugins(nl, pluginIndex, foundSignatures, thisPluginSignatures, plugin, workingPlugins, pluginInterpreter, init);
+			
+			
 			workingPlugins.addLast(plugin);
 		}
 		return workingPlugins;

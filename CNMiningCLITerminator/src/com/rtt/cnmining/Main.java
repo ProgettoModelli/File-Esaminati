@@ -2,20 +2,17 @@ package com.rtt.cnmining;
 
 import org.deckfour.xes.extension.std.XConceptExtension;
 import org.deckfour.xes.in.XMxmlParser;
-import org.deckfour.xes.in.XParser;
+
 import org.deckfour.xes.in.XesXmlParser;
 import org.deckfour.xes.model.XEvent;
 import org.deckfour.xes.model.XLog;
 import org.deckfour.xes.model.XTrace;
 import org.processmining.models.flexiblemodel.Flex;
 import org.processmining.models.graphbased.directed.bpmn.BPMNDiagram;
-import org.processmining.models.graphbased.directed.bpmn.BPMNEdge;
-import org.processmining.models.graphbased.directed.bpmn.BPMNNode;
-import org.processmining.models.graphbased.directed.bpmn.elements.Flow;
-import org.processmining.models.graphbased.directed.bpmn.elements.Gateway;
+
 import org.processmining.plugins.cnmining.CNMining;
 import org.processmining.plugins.cnmining.Settings;
-import org.processmining.plugins.converters.FlexToBPMNConversionPlugin;
+
 
 import java.io.File;
 import java.io.IOException;

@@ -62,6 +62,7 @@ public class ProMResourceType implements ResourceType {
 							try {
 								uri = new URL("http://www.processmining.org").toURI();
 							} catch (Exception e2) {
+                                                            System.out.println("errore");    
 							}
 						}
 						return uri;
@@ -89,6 +90,7 @@ public class ProMResourceType implements ResourceType {
 						try {
 							uri = new URL("http://www.processmining.org").toURI();
 						} catch (Exception e2) {
+                                                    System.out.println("errore");    
 						}
 						return uri;
 					}

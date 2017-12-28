@@ -14,7 +14,7 @@ import org.deckfour.uitopia.api.model.Author;
 public class ProMResourceTypeInformation {
 
 	private final static Map<Class<?>, ResourceTypeInfo> typeInfo = new HashMap<Class<?>, ResourceTypeInfo>();
-	private static ProMResourceTypeInformation instance;
+	private static ProMResourceTypeInformation instance = new ProMResourceTypeInformation();
 
 	private ProMResourceTypeInformation() {
 	}
@@ -38,11 +38,29 @@ public class ProMResourceTypeInformation {
 
 class ResourceTypeInfo implements Author {
 
-	public String affiliation;
+	/**
+         * public
+         */
+        public String affiliation;
+        /**
+     * public 
+     */
 	public String email;
+        /**
+     * public 
+     */
 	public String author;
+        /**
+     * public 
+     */
 	public String website;
+        /**
+     * public 
+     */
 	public String icon;
+        /**
+     * public 
+     */
 	public String typename;
 
 	public ResourceTypeInfo(String typename, String affiliation, String email, String author, String website,
@@ -76,6 +94,7 @@ class ResourceTypeInfo implements Author {
 		try {
 			uri = new URL(website).toURI();
 		} catch (Exception e2) {
+                    System.out.println("errore");    
 		}
 		return uri;
 	}

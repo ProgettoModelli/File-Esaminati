@@ -12,9 +12,15 @@ import com.carrotsearch.hppc.ObjectArrayList;
  */
 public class ConstraintsManager {
 
+    /**
+     * public
+     */
     public ObjectArrayList<Forbidden> 
     	forbidden, 
     	forbiddenUnfolded;
+    /**
+     * public 
+     */
     public ObjectArrayList<Constraint>	
     	positivi, 
     	negati, 

@@ -47,7 +47,7 @@ public class PromTestFramework {
 				}
             return failedTest;
         }
-	public Object main(CommandLineArgumentList commandlineArguments) throws Throwable {
+	public void other_main(CommandLineArgumentList commandlineArguments) throws Throwable {
 		System.out.println("Entering ProM Test Framework");
 		
 		// from where do we read the tests
@@ -69,9 +69,10 @@ public class PromTestFramework {
 		List<PromTestException.WrappedException> errorTest = new LinkedList<PromTestException.WrappedException>();
 		
 		System.out.println("Running "+testMethods.size()+" tests:");
+                try {
 		for (Method test : testMethods) {
 			
-			try {
+			
 				System.out.println(test);
 				
 				// run test and get test result
@@ -86,18 +87,19 @@ public class PromTestFramework {
 				// compare result and expected
                                 failedTest = mP1(result, expected, failedTest, test);
 				
-			} catch (Throwable e) {
+			
+		}
+                } catch (Throwable e) {
 				// test crashed, store exception for reporting
 				errorTest.add(
 						new PromTestException.WrappedException(test, "errore"));
 			}
-		}
 		
 		if (!failedTest.isEmpty() || ! errorTest.isEmpty()) {
 			throw new PromTestException(failedTest, errorTest);
 		}
 		
-    	return null;
+    	return;
 	}
 	
 	private void getAllTestMethods(String lookUpDir) throws Exception {
@@ -138,10 +140,10 @@ public class PromTestFramework {
             try {
                 flag=new File(url.toURI()).getCanonicalPath().startsWith(libPath);
             }catch (IOException e){
-                
+                System.out.println("errore");    
             }catch (URISyntaxException e){
-                
-            }
+                System.out.println("errore");    
+                }
             return flag;
         }
 	/**
@@ -412,9 +414,23 @@ public class PromTestFramework {
 	}
 	
 	private static String readFile(String scriptFile) throws IOException {
-		InputStream is = new FileInputStream("");
-		String result = readWholeStream(is);
-		is.close();
+                InputStream is = null;
+                String result = "";
+                try{
+		is = new FileInputStream("");
+		result = readWholeStream(is);
+                } catch (Exception e){
+                    System.out.println("errore");
+                } finally{
+                    if(is != null){
+                        try{
+                            is.close();
+                        } catch (Exception e){
+                            System.out.println("errore");
+                        }
+                    }
+                }
+		
 		return result;
 	}
 
@@ -425,7 +441,7 @@ public class PromTestFramework {
 
         c = reader.read();
 		while (c != -1) {
-			result.append((char) c);
+			result.append(c);
             c = reader.read();
 		}
 		return result.toString();

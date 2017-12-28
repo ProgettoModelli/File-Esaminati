@@ -1,7 +1,7 @@
 package org.processmining.plugins.cnmining;
 
 import com.carrotsearch.hppc.IntArrayList;
-import com.carrotsearch.hppc.IntIntOpenHashMap;
+
 import com.carrotsearch.hppc.IntOpenHashSet;
 import com.carrotsearch.hppc.ObjectArrayList;
 import com.carrotsearch.hppc.ObjectContainer;
@@ -9,29 +9,23 @@ import com.carrotsearch.hppc.ObjectIntOpenHashMap;
 import com.carrotsearch.hppc.ObjectLookupContainer;
 import com.carrotsearch.hppc.ObjectObjectOpenHashMap;
 import com.carrotsearch.hppc.ObjectOpenHashSet;
-import com.carrotsearch.hppc.cursors.IntCursor;
-import com.carrotsearch.hppc.cursors.ObjectCursor;
-import com.fluxicon.slickerbox.components.NiceSlider;
-import com.fluxicon.slickerbox.factory.SlickerFactory;
 
-import java.awt.Color;
+import com.carrotsearch.hppc.cursors.ObjectCursor;
+
+
 import java.awt.Dimension;
-import java.io.File;
+
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.OpenOption;
-import java.nio.file.StandardOpenOption;
+
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
-import javax.swing.BorderFactory;
-import javax.swing.JOptionPane;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 
-import org.deckfour.uitopia.api.event.TaskListener;
+import javax.swing.JOptionPane;
+
+
+
 import org.deckfour.xes.extension.std.XConceptExtension;
 import org.deckfour.xes.extension.std.XLifecycleExtension;
 import org.deckfour.xes.extension.std.XTimeExtension;
@@ -46,7 +40,7 @@ import org.processmining.contexts.cli.CLIPluginContext;
 import org.processmining.contexts.uitopia.UIPluginContext;
 import org.processmining.contexts.uitopia.annotations.UITopiaVariant;
 import org.processmining.framework.plugin.annotations.Plugin;
-import org.processmining.framework.util.ui.widgets.ProMPropertiesPanel;
+
 import org.processmining.models.causalnet.CausalNetAnnotations;
 import org.processmining.models.causalnet.CausalNetAnnotationsConnection;
 import org.processmining.models.connections.GraphLayoutConnection;
@@ -54,9 +48,7 @@ import org.processmining.models.connections.flexiblemodel.FlexEndTaskNodeConnect
 import org.processmining.models.connections.flexiblemodel.FlexStartTaskNodeConnection;
 import org.processmining.models.flexiblemodel.EndTaskNodesSet;
 import org.processmining.models.flexiblemodel.Flex;
-import org.processmining.models.flexiblemodel.FlexFactory;
-import org.processmining.models.flexiblemodel.FlexNode;
-import org.processmining.models.flexiblemodel.SetFlex;
+
 import org.processmining.models.flexiblemodel.StartTaskNodesSet;
 import org.processmining.models.graphbased.directed.petrinet.Petrinet;
 import org.processmining.models.graphbased.directed.petrinet.PetrinetNode;
@@ -75,10 +67,18 @@ import org.xmlpull.v1.XmlPullParserFactory;
  * @author Utente
  */
 public class CNMining {
-    public static String attivita_iniziale = "_START_";
-    public static String attivita_finale = "_END_";
-
-    public static long time;
+   /**
+    * public static
+    */
+    public static final String attivita_iniziale = "_START_";
+   /**
+     * public 
+     */
+    public static final String attivita_finale = "_END_";
+/**
+     * public 
+     */
+    public static long time  = 0;
 
     @Plugin(
             name = "CNMining",
@@ -102,17 +102,14 @@ public class CNMining {
             author = "F. Lupia",
             email = "lupia@dimes.unical.it"
     )
-    public static Object[] run(UIPluginContext context, XLog log) throws Exception {
+    public static boolean[] run(UIPluginContext context, XLog log) throws Exception {
         SettingsView settingsView = new SettingsView(context, log);
         Settings settings = settingsView.show();
 
-        return startCNMining(context, log, settings, true);
+        return (boolean[]) startCNMining(context, log, settings, true);
     }
 
-    public static void progress(boolean uiMode, UIPluginContext context, int value) {
-        if (uiMode)
-            context.getProgress().setValue(value);
-    }
+    public static void progress(boolean uiMode, UIPluginContext context, int value) {  if (uiMode)  context.getProgress().setValue(value); }
 
     public static double[][] setMatrix(Settings settings, double[][] Matrix, UnfoldResult unfoldResult) {
         if (settings.sigmaLogNoise > 0.0D) {
@@ -150,7 +147,7 @@ public class CNMining {
                 }
                 System.out.println("NOT OK!!!!!!!");
             }
-        }
+		 }
         return e;
     }
 
@@ -159,10 +156,8 @@ public class CNMining {
         int removableEdgesSize = removableEdges.size();
         for (int jj = 0; jj < removableEdgesSize; jj++) {
             e = (Edge) removableEdges.get(jj);
-
             double e_cs = causalScoreMatrixResidua[e.getX().getID_attivita()][e.getY().getID_attivita()];
-
-            if (e_cs < worst_causal_score) {
+			if (e_cs < worst_causal_score) {
                 worst_causal_score = e_cs;
                 bestRemovable = e;
             }
@@ -219,11 +214,11 @@ public class CNMining {
 
     public static void findRemovableNodes(Node n, Graph grafoFolded, ObjectArrayList<Node> removableNodes) {
         int grafoFoldedListaNodiSize = grafoFolded.listaNodi().size();
-        for (int jj = 0; jj < grafoFoldedListaNodiSize; jj++) {
+        int jj = 0;
+        while (jj < grafoFoldedListaNodiSize) {
             n = (Node) grafoFolded.listaNodi().get(jj);
-            if ((n.getInner_degree() == 0) && (n.getOuter_degree() == 0)) {
-                removableNodes.add(n);
-            }
+            if ((n.getInner_degree() == 0) && (n.getOuter_degree() == 0)) removableNodes.add(n);
+            jj++;
             grafoFoldedListaNodiSize = grafoFolded.listaNodi().size();
         }
     }
@@ -243,7 +238,7 @@ public class CNMining {
         }
     }
 
-    public static Object[] startCNMining(UIPluginContext context, XLog log, Settings settings, boolean uiMode) throws Exception {
+    public static Boolean[] startCNMining(UIPluginContext context, XLog log, Settings settings, boolean uiMode) throws Exception {
         ConstraintsManager vincoli = new ConstraintsManager();
 
         progress(uiMode, context, 1);
@@ -300,10 +295,8 @@ public class CNMining {
             System.exit(0);
         } else System.out.println("I Vincoli sono consistenti");
 
-        if (vincoliDisponibili) {
-            System.out.println("Stampa il grafo folded PG0...");
-
-            cnmining.costruisciGrafoPG0(
+        if (vincoliDisponibili) {  System.out.println("Stampa il grafo folded PG0...");
+		  cnmining.costruisciGrafoPG0(
                     grafoUnfolded, bestNextMatrix, vincoli.positiviUnfolded,
                     vincoli.positivi, vincoli.negatiUnfolded,
                     vincoli.negati, vincoli.forbidden,
@@ -362,8 +355,7 @@ public class CNMining {
         cnmining.rimuoviDipendenzeIndirette(
                 grafoFolded, foldResult.map, foldResult.attivita_tracce,
                 foldResult.traccia_attivita, causalScoreMatrixResidua,
-                settings.sigmaLogNoise, vincoli.positivi
-        );
+                settings.sigmaLogNoise, vincoli.positivi);
 
         Node start = new Node(attivita_iniziale, foldResult.map.get(attivita_iniziale));
         Node end = new Node(attivita_finale, foldResult.map.get(attivita_finale));
@@ -374,8 +366,7 @@ public class CNMining {
         grafoFolded = cnmining.rimuoviAttivitaFittizie(
                 grafoFolded, foldResult.map, foldResult.traccia_attivita,
                 foldResult.attivita_tracce, start, end,
-                log, startActivities, endActivities
-        );
+                log, startActivities, endActivities);
 
         cnmining.computeBindings(grafoFolded, foldResult.traccia_attivita, foldResult.map);
 
@@ -384,8 +375,7 @@ public class CNMining {
         causalScoreMatrixResidua = cnmining.calcoloMatriceDeiCausalScore(log, foldResult.map, foldResult.traccia_attivita, settings.fallFactor);
         for (; ; ) {
             ObjectArrayList<Edge> removableEdges = cnmining.removableEdges(
-                    grafoFolded, causalScoreMatrixResidua, vincoli.positivi, foldResult.map, settings.relativeToBest
-            );
+                    grafoFolded, causalScoreMatrixResidua, vincoli.positivi, foldResult.map, settings.relativeToBest);
 
             if (removableEdges.size() == 0) {
                 break;
@@ -470,7 +460,7 @@ public class CNMining {
             visualize(flexDiagram);
         }
 
-        return new Object[]{flexDiagram, diagram.startTaskNodes, diagram.endTaskNodes, diagram.annotations};
+        return new Boolean[]{flexDiagram, diagram.startTaskNodes, diagram.endTaskNodes, diagram.annotations};
 
     }
 
@@ -485,7 +475,27 @@ public class CNMining {
             vincoli.forbidden.add(new Forbidden(body, head));
         }
     }
+    
+    private static void erroreNoInputFile(int constraintsSize){
+        if (constraintsSize == 0) {
+                        JOptionPane.showMessageDialog(null, "No constraints contained in the input file...");
+                    }
+    }
+    
+    private static ConstraintsManager addVincoli(ConstraintsManager vincoli, Constraint constr){
+        
+        if (constr.isPositiveConstraint()) {
+                            vincoli.positivi.add(constr);
+                        } else {
 
+                            addForbiddenVincoli(vincoli, constr);
+
+
+                            vincoli.negati.add(constr);
+                        }
+        return vincoli;
+    }
+    
     private boolean caricaVincoli(ConstraintsManager vincoli, Settings settings) {
         if (settings.areConstraintsAvailable()) {
             if (settings.constraintsFilename.equals("")) {
@@ -501,21 +511,12 @@ public class CNMining {
                 } else {
                     ObjectArrayList<Constraint> constraints = cp.getConstraints();
                     int constraintsSize = constraints.size();
-                    if (constraintsSize == 0) {
-                        JOptionPane.showMessageDialog(null, "No constraints contained in the input file...");
-                    }
-
+                    erroreNoInputFile(constraintsSize);
+                    Constraint constr = null;
                     for (int i = 0; i < constraintsSize; i++) {
-                        Constraint constr = (Constraint) constraints.get(i);
-                        if (constr.isPositiveConstraint()) {
-                            vincoli.positivi.add(constr);
-                        } else {
-
-                            addForbiddenVincoli(vincoli, constr);
-
-
-                            vincoli.negati.add(constr);
-                        }
+                        constr = (Constraint) constraints.get(i);
+                        vincoli = addVincoli(vincoli, constr);
+                        
                     }
                 }
             }
@@ -539,9 +540,7 @@ public class CNMining {
                         break;
                     }
                 }
-                if (!found) {
-                    graph.getMap().put(node, new ObjectOpenHashSet<Node>());
-                }
+                if (!found) graph.getMap().put(node, new ObjectOpenHashSet<Node>());
             }
         }
     }
@@ -585,7 +584,8 @@ public class CNMining {
     public static void RE(Graph folded_g, ObjectArrayList<Node> startActs, ObjectArrayList<Node> endActs, Node start, Node end) {
         Edge e = null;
         int foldedGListaArchi = folded_g.getLista_archi().size();
-        for (int ii = 0; ii < foldedGListaArchi; ii++) {
+        int ii = 0;
+        while (ii < foldedGListaArchi) {
             e = (Edge) folded_g.getLista_archi().get(ii);
             if (e.getX().equals(start)) {
                 folded_g.getLista_archi().removeAllOccurrences(e);
@@ -602,6 +602,7 @@ public class CNMining {
                 e.getX().decr_Outer_degree();
                 ii--;
             }
+            ii++;
             foldedGListaArchi = folded_g.getLista_archi().size();
         }
     }
@@ -609,7 +610,8 @@ public class CNMining {
     public static Graph CNN(Graph folded_g, Graph cleanG, int startID, int endID, ObjectIntOpenHashMap<String> folded_map) {
         Node n;
         int foldedGListaNodiSize = folded_g.listaNodi().size();
-        for (int ii = 0; ii < foldedGListaNodiSize; ii++) {
+        int ii = 0;
+        while (ii < foldedGListaNodiSize) {
             n = (Node) folded_g.listaNodi().get(ii);
             if ((n.getID_attivita() > startID) && (n.getID_attivita() < endID)) {
                 Node newNode = new Node(n.getNomeAttivita(), n.getID_attivita() - 1);
@@ -627,6 +629,7 @@ public class CNMining {
                 folded_map.put(newNode.getNomeAttivita(), newNode.getID_attivita());
                 cleanG.getMap().put(newNode, new ObjectOpenHashSet());
             }
+            ii++;
             foldedGListaNodiSize = folded_g.listaNodi().size();
         }
         return cleanG;
@@ -636,11 +639,13 @@ public class CNMining {
         ObjectArrayList<Node> startActs = new ObjectArrayList<Node>();
         ObjectArrayList<Node> endActs = new ObjectArrayList<Node>();
         int logSize = log.size();
-        for (int i = 0; i < logSize; i++) {
+        int i = 0;
+        while (i < logSize) {
             XTrace trace = (XTrace) log.get(i);
             trace.remove(0);
             trace.remove(trace.size() - 1);
             logSize = log.size();
+            i++;
         }
 
         int startID = start.getID_attivita();
@@ -709,13 +714,15 @@ public class CNMining {
     private void removeStrangeDependencies(Graph g, ObjectIntOpenHashMap<String> map, ObjectArrayList<Constraint> vincoli_positivi) {
         int gListaNodiSize = g.listaNodi().size();
         int gAdjacentNodesSize;
-        for (int ii = 0; ii < gListaNodiSize; ii++) {
+        int ii = 0;
+        while (ii < gListaNodiSize) {
             Node n = (Node) g.listaNodi().get(ii);
             g.removeEdge(n, n);
             n.decr_Outer_degree();
             n.decr_Inner_degree();
             gAdjacentNodesSize = g.adjacentNodes(n).size();
-            for (int jj = 0; jj < gAdjacentNodesSize; jj++) {
+            int jj = 0;
+            while (jj < gAdjacentNodesSize) {
                 Node adjNode = (Node) g.listaNodi().get(jj);
 
                 if (n.getNomeAttivita().split("_")[1].split("\\+")[0].equals(adjNode.getNomeAttivita().split("_")[0])) {
@@ -725,8 +732,10 @@ public class CNMining {
                     n.decr_Outer_degree();
                     adjNode.decr_Inner_degree();
                 }
+                jj++;
                 gAdjacentNodesSize = g.adjacentNodes(n).size();
             }
+            ii++;
             gListaNodiSize = g.listaNodi().size();
         }
 
@@ -775,7 +784,8 @@ public class CNMining {
     public void aggiungiAttivitaFittizia(XLog xlog) {
         XFactory factory = (XFactory) XFactoryRegistry.instance().currentDefault();
         int xlogSize = xlog.size();
-        for (int i = 0; i < xlogSize; i++) {
+        int i = 0;
+        while (i < xlogSize) {
             XTrace trace = (XTrace) xlog.get(i);
             XEvent activity_first = (XEvent) trace.get(0);
             XEvent activity_last = (XEvent) trace.get(trace.size() - 1);
@@ -811,6 +821,7 @@ public class CNMining {
             }
             trace.add(event_last);
             xlogSize = xlog.size();
+            i++;
         }
     }
 
@@ -1444,12 +1455,14 @@ public class CNMining {
             attivita_candidate.add(attivita_iniziale);
         }
         listaTracceXSize = lista_tracce_x.size();
-        for (int i = 1; i < listaTracceXSize; i++) {
+        int i = 1;
+        while (i < listaTracceXSize) {
             String trace = (String) lista_tracce_x.get(i);
 
             ObjectOpenHashSet<String> predecessors = getPredecessors_FoldedLocal(trace, attivita_x, attivita_y, traccia_attivita);
             attivita_candidate.retainAll(predecessors);
             listaTracceXSize = lista_tracce_x.size();
+            i++;
         }
 
         return attivita_candidate;
@@ -1718,8 +1731,10 @@ public class CNMining {
 
     public static Node[] nPCP1(ObjectArrayList<Node> listaNodiPath, Node z, Node w, Node zz, Node ww, Graph unfolded_g, ObjectArrayList<Edge> archiRimossi, double[][] csm, double minCs) {
         int listaNodiPathSize = listaNodiPath.size();
-        for (int i = 0; i < listaNodiPathSize - 1; i++) {
-            for (int j = i + 1; j < listaNodiPathSize; j++) {
+        int i = 0;
+        while (i < listaNodiPathSize - 1) {
+            int j = i + 1;
+            while (j < listaNodiPathSize) {
                 zz = (Node) listaNodiPath.get(i);
                 ww = (Node) listaNodiPath.get(j);
                 Edge e = metodoManutenzione3(zz, ww);
@@ -1732,8 +1747,10 @@ public class CNMining {
                     }
                 }
                 listaNodiPathSize = listaNodiPath.size();
+                j++;
             }
             listaNodiPathSize = listaNodiPath.size();
+            i++;
         }
         Node[] ret = new Node[2];
         ret[0] = z;
@@ -1754,16 +1771,18 @@ public class CNMining {
                     double best_unfolded_cs = -1.0D;
 
                     Object[] keys2 = map.keys;
+                    String unfolded_item;
                     for (int j = 0; j < map.allocated.length; j++) {
+                        
+                     unfolded_item = null;
                         if (map.allocated[j] != false) {
-                            String unfolded_item = (String) keys2[j];
-
-                            if ((unfolded_item.split("#")[0].equals(activity)) &&
+                             unfolded_item = (String) keys2[j];
+                        }
+                        if (unfolded_item != null && (unfolded_item.split("#")[0].equals(activity)) &&
                                     (csm[map.get(unfolded_item)][w.getID_attivita()] > best_unfolded_cs)) {
                                 best_unfolded_item = unfolded_item;
                                 best_unfolded_cs = csm[map.get(unfolded_item)][w.getID_attivita()];
                             }
-                        }
                     }
                     lista_candidati_best_pred_unfolded.add(best_unfolded_item);
                 }
@@ -1847,7 +1866,8 @@ public class CNMining {
         Node[] zw = new Node[2];
         int listaForbiddenUnfoldedSize = lista_forbidden_unfolded.size();
         int unfoldedGListaNodiSize;
-        for (int k = 0; k < listaForbiddenUnfoldedSize; k++) {
+        int k = 0;
+        while (k < listaForbiddenUnfoldedSize) {
             Forbidden f = (Forbidden) buffer[k];
             Node x = metodoManutenzione(f, map);
             Node y = metodoManutenzione2(f, map);
@@ -1855,10 +1875,12 @@ public class CNMining {
                 unfolded_g.removeEdge(x, y);
             }
             unfoldedGListaNodiSize = unfolded_g.listaNodi().size();
-            for (int ni = 0; ni < unfoldedGListaNodiSize; ni++) {
+            int ni = 0;
+            while (ni < unfoldedGListaNodiSize) {
                 Node n = (Node) unfolded_g.listaNodi().get(ni);
                 n.setMark(false);
                 unfoldedGListaNodiSize = unfolded_g.listaNodi().size();
+                ni++;
             }
 
 
@@ -1910,16 +1932,19 @@ public class CNMining {
                     nPCP3_1(best_succ, unfolded_g, map, z, m);
 
                     unfoldedGListaNodiSize = unfolded_g.listaNodi().size();
-                    for (int ni = 0; ni < unfoldedGListaNodiSize; ni++) {
+                    ni = 0;
+                    while (ni < unfoldedGListaNodiSize) {
                         Node n = (Node) unfolded_g.listaNodi().get(ni);
                         n.setMark(false);
                         unfoldedGListaNodiSize = unfolded_g.listaNodi().size();
+                        ni++;
                     }
                     bfsFLag = bfs(unfolded_g, x, y, null, null);
                 }
                 while (bfsFLag);
             }
             listaForbiddenUnfoldedSize = lista_forbidden_unfolded.size();
+            k++;
         }
     }
 
@@ -1974,13 +1999,14 @@ public class CNMining {
                 unfolded_c.setConstraintType((temp3).isPositiveConstraint());
                 unfolded_c.setPathConstraint((temp3).isPathConstraint());
                 unfolded_c.addHead(unfolded_head);
-
+                String unfolded_body;
                 for (int j = 0; j < map.allocated.length; j++) {
+                    unfolded_body = null;
                     if (map.allocated[j] != false) {
-                        String unfolded_body = (String) keys[j];
-                        if ((temp3).getBodyList().contains(unfolded_body.split("#")[0]))
-                            unfolded_c.addBody(unfolded_body);
+                        unfolded_body = (String) keys[j];
                     }
+                    if (unfolded_body != null &&(temp3).getBodyList().contains(unfolded_body.split("#")[0]))
+                            unfolded_c.addBody(unfolded_body);
                 }
                 vincoli_positivi_unfolded.add(unfolded_c);
             }
@@ -2000,16 +2026,16 @@ public class CNMining {
                 unfolded_c.setConstraintType((temp4).isPositiveConstraint());
                 unfolded_c.setPathConstraint((temp4).isPathConstraint());
                 unfolded_c.addHead(unfolded_head);
-
+                String unfolded_body;
                 for (int j = 0; j < map.allocated.length; j++) {
+                    unfolded_body = null;
                     if (map.allocated[j] != false) {
-                        String unfolded_body = (String) keys2[j];
-
-                        if ((temp4).getBodyList().contains(unfolded_body.split("#")[0])) {
+                        unfolded_body = (String) keys2[j];                        
+                    }
+                    if (unfolded_body != null && (temp4).getBodyList().contains(unfolded_body.split("#")[0])) {
                             unfolded_c.addBody(unfolded_body);
                             lista_forbidden_unfolded.add(new Forbidden(unfolded_body, unfolded_head));
                         }
-                    }
                 }
                 vincoli_negati_unfolded.add(unfolded_c);
             }
@@ -2047,16 +2073,17 @@ public class CNMining {
                     double best_unfolded_cs = -1.0D;
 
                     Object[] keys = map.keys;
-
+                    String unfolded_item;
                     for (int i = 0; i < map.allocated.length; i++) {
+                        unfolded_item = null;
                         if (map.allocated[i] != false) {
-                            String unfolded_item = (String) keys[i];
-                            if ((unfolded_item.split("#")[0].equals(activity)) &&
+                            unfolded_item = (String) keys[i];                            
+                        }
+                        if (unfolded_item != null && (unfolded_item.split("#")[0].equals(activity)) &&
                                     (csm[map.get(unfolded_item)][y.getID_attivita()] > best_unfolded_cs)) {
                                 best_unfolded_item = unfolded_item;
                                 best_unfolded_cs = csm[map.get(unfolded_item)][y.getID_attivita()];
                             }
-                        }
                     }
                     lista_candidati_best_pred_unfolded.add(best_unfolded_item);
                 }
@@ -2081,17 +2108,17 @@ public class CNMining {
                     double best_unfolded_cs = -1.0D;
 
                     Object[] keys = map.keys;
-
+                    String unfolded_item;
                     for (int i = 0; i < map.allocated.length; i++) {
+                        unfolded_item = null;
                         if (map.allocated[i] != false) {
-                            String unfolded_item = (String) keys[i];
-
-                            if ((unfolded_item.split("#")[0].equals(activity)) &&
+                            unfolded_item = (String) keys[i];
+                        }
+                        if (unfolded_item != null && (unfolded_item.split("#")[0].equals(activity)) &&
                                     (csm[x.getID_attivita()][map.get(unfolded_item)] > best_unfolded_cs)) {
                                 best_unfolded_item = unfolded_item;
                                 best_unfolded_cs = csm[x.getID_attivita()][map.get(unfolded_item)];
                             }
-                        }
                     }
                     ((ObjectArrayList) lista_candidati_best_succ_unfolded).add(best_unfolded_item);
                 }
@@ -2113,9 +2140,24 @@ public class CNMining {
         return new Node(f.getA(), map.get(f.getA()));
     }
 
+    private static void eFP1(String best_pred, ObjectIntOpenHashMap<String> map, Node nz, Graph g, Node y, double[][] m){
+        if (!best_pred.equals("")) {
+                        nz = g.getNode(getKeyByValue(map, map.get(best_pred)), map.get(best_pred));
+                    }
+                        if (nz != null && !g.isConnected(nz, y)) {
+                            m[map.get(best_pred)][y.getID_attivita()] = 1.0D;
+                            g.addEdge(nz, y, false);
+
+                            nz.incr_Outer_degree();
+                            y.incr_Inner_degree();
+                        }
+    }
+    
     public static void eliminaForbidden(Graph g, ObjectArrayList<Forbidden> lista_forbidden_unfolded, ObjectArrayList<Forbidden> lista_forbidden, ObjectIntOpenHashMap<String> map, double[][] m, double[][] csm, ObjectObjectOpenHashMap<String, ObjectArrayList<String>> attivita_tracce, ObjectObjectOpenHashMap<String, ObjectArrayList<String>> traccia_attivita, ObjectArrayList<Constraint> vincoli_positivi, ObjectArrayList<Constraint> vincoli_negati, Graph folded_g, ObjectIntOpenHashMap<String> folded_map) {
         int it = 0;
         int listaForbiddenUnfoldedSize = lista_forbidden_unfolded.size();
+        Node nz;
+        Node nw;
         while (it < listaForbiddenUnfoldedSize) {
             Forbidden f = (Forbidden) lista_forbidden_unfolded.get(it);
             Node x = metodoManutenzione4(f, map);
@@ -2157,30 +2199,22 @@ public class CNMining {
 
                     best_succ = eFP2(best_succ, lista_candidati_best_succ, best_unfolded_item, map, csm, x, g, vincoli_negati, folded_g, folded_map, lista_forbidden);
 
-
-                    if (!best_pred.equals("")) {
-                        Node nz = g.getNode(getKeyByValue(map, map.get(best_pred)), map.get(best_pred));
-
-                        if (!g.isConnected(nz, y)) {
-                            m[map.get(best_pred)][y.getID_attivita()] = 1.0D;
-                            g.addEdge(nz, y, false);
-
-                            nz.incr_Outer_degree();
-                            y.incr_Inner_degree();
-                        }
-                    }
-
+                    nz = null;
+                    eFP1(best_pred, map, nz, g, y, m);
+                    
+                    nw = null;
                     if (!best_succ.equals("")) {
-                        Node nw = g.getNode(getKeyByValue(map, map.get(best_succ)), map.get(best_succ));
+                        nw = g.getNode(getKeyByValue(map, map.get(best_succ)), map.get(best_succ));
 
-                        if (!g.isConnected(x, nw)) {
+                        
+                    }
+                    if (nw != null && !g.isConnected(x, nw)) {
                             m[x.getID_attivita()][map.get(best_succ)] = 1.0D;
                             g.addEdge(x, nw, false);
 
                             x.incr_Outer_degree();
                             nw.incr_Inner_degree();
                         }
-                    }
                 }
             }
             it++;
@@ -2358,10 +2392,12 @@ public class CNMining {
                 }
             }
             graphListaNodiSize = graph.listaNodi().size();
-            for (int ni = 0; ni < graphListaNodiSize; ni++) {
+            int ni = 0;
+            while (ni < graphListaNodiSize) {
                 Node n = (Node) graph.listaNodi().get(ni);
                 n.setMark(false);
                 graphListaNodiSize = graph.listaNodi().size();
+                ni++;
             }
         }
         while (localIterator1.hasNext() && localIterator2.hasNext());
@@ -2588,9 +2624,10 @@ public class CNMining {
         return best_succ;
     }
 
-    public static static int gGAP1(int count, XLog log, ObjectObjectOpenHashMap<String, ObjectArrayList<String>> traccia_attivitaOri, ObjectIntOpenHashMap<String> mapOri, ObjectObjectOpenHashMap<String, ObjectArrayList<String>> attivita_tracceOri) {
+    public static int gGAP1(int count, XLog log, ObjectObjectOpenHashMap<String, ObjectArrayList<String>> traccia_attivitaOri, ObjectIntOpenHashMap<String> mapOri, ObjectObjectOpenHashMap<String, ObjectArrayList<String>> attivita_tracceOri) {
         int logSize = log.size();
-        for (int i = 0; i < logSize; i++) {
+        int i = 0;
+        while (i < logSize) {
             XTrace trace = (XTrace) log.get(i);
             String traccia = trace.getAttributes().get("concept:name") + " # " + i;
 
@@ -2617,6 +2654,7 @@ public class CNMining {
                 ((ObjectArrayList) traccia_attivitaOri.get(traccia)).add(nome_attivita);
             }
             logSize = log.size();
+            i++;
         }
         return count;
     }
@@ -2660,9 +2698,10 @@ public class CNMining {
         }
     }
 
-    public Graph getGrafoAggregato(Graph g, XLog log, boolean flag, ObjectIntOpenHashMap<String> mapOri, ObjectObjectOpenHashMap<String, ObjectArrayList<String>> attivita_tracceOri, ObjectObjectOpenHashMap<String, ObjectArrayList<String>> traccia_attivitaOri) {
+    public Graph getGrafoAggregato(Graph g, XLog log, boolean flag, ObjectIntOpenHashMap<String> mapOri, ObjectObjectOpenHashMap<String, ObjectArrayList<String>> attivita_tracceOri, ObjectObjectOpenHashMap<String, ObjectArrayList<String>> traccia_attivitaOri){
+        
         if (flag) {
-
+            
             time += System.currentTimeMillis();
 
             int count = 0;
@@ -2685,7 +2724,8 @@ public class CNMining {
         Object[] vals = g.getMap().values;
         int gMapAllocatedLength = g.getMap().allocated.length;
         int graphListaNodiSize;
-        for (int i = 0; i < gMapAllocatedLength; i++) {
+        int i = 0;
+        while (i < gMapAllocatedLength) {
             if (g.getMap().allocated[i] != false) {
                 Node n = (Node) keys[i];
 
@@ -2704,6 +2744,7 @@ public class CNMining {
                 }
             }
             gMapAllocatedLength = g.getMap().allocated.length;
+            i++;
         }
 
         time += System.currentTimeMillis() - time;
@@ -2955,7 +2996,7 @@ public class CNMining {
         int counter = 0;
 
         int it1 = 0;
-        int listaTracceNSize =  lista_tracce_n.size();
+        int listaTracceNSize = lista_tracce_n.size();
         while ((it1 < listaTracceNSize) && (rimuovi_arco)) {
             String trace_1 = (String) lista_tracce_n.get(it1);
 
@@ -2966,7 +3007,7 @@ public class CNMining {
                 }
             }
             it1++;
-            listaTracceNSize =  lista_tracce_n.size();
+            listaTracceNSize = lista_tracce_n.size();
         }
 
         if (rimuovi_arco) {
@@ -3032,10 +3073,12 @@ public class CNMining {
             }
             if (path_constraint) {
                 int graphListaNodiSize = graph.listaNodi().size();
-                for (int ni = 0; ni < graphListaNodiSize; ni++) {
+                int ni = 0;
+                while (ni < graphListaNodiSize) {
                     Node n = (Node) graph.listaNodi().get(ni);
                     n.setMark(false);
                     graphListaNodiSize = graph.listaNodi().size();
+                    ni++;
                 }
 
                 if (bfs(graph, nBody, nHead, null, null)) {
@@ -3082,7 +3125,8 @@ public class CNMining {
 
     public static void cBP1(int i, ObjectArrayList<String> traccia, Graph g, String activity, ObjectIntOpenHashMap<String> map, boolean verificato, IntOpenHashSet[] outputBindings, IntOpenHashSet[] inputBindings, IntArrayList[] outputBindingsExtended, IntArrayList[] inputBindingsExtended) {
         int tracciaSize = traccia.size();
-        for (int j = i + 1; j < tracciaSize; j++) {
+        int j = i + 1;
+        while (j < tracciaSize) {
             String successor = (String) traccia.get(j);
 
             if (g.isConnected(new Node(activity, map.get(activity)), new Node(successor, map.get(successor)))) {
@@ -3105,6 +3149,7 @@ public class CNMining {
                 }
             }
             tracciaSize = traccia.size();
+            j++;
         }
     }
 
@@ -3187,17 +3232,20 @@ public class CNMining {
                 IntOpenHashSet[] inputBindings = metodoManutenzione102(traccia);
                 IntArrayList[] inputBindingsExtended = metodoManutenzione103(traccia);
                 int tracciaSize = traccia.size();
-                for (int i = 0; i < tracciaSize; i++) {
+                int i = 0;
+                while (i < tracciaSize) {
                     outputBindings[i] = new IntOpenHashSet();
                     outputBindingsExtended[i] = new IntArrayList();
                     inputBindings[i] = new IntOpenHashSet();
                     inputBindingsExtended[i] = new IntArrayList();
                     tracciaSize = traccia.size();
+                    i++;
                 }
 
                 int[] activitiesIDMapping = metodoManutenzione32(traccia.size());
                 tracciaSize = traccia.size();
-                for (int i = 0; i < tracciaSize; i++) {
+                i = 0;
+                while (i < tracciaSize) {
                     String activity = (String) traccia.get(i);
                     activitiesIDMapping[i] = map.get(activity);
 
@@ -3207,6 +3255,7 @@ public class CNMining {
                     verificato = false;
                     cBP2(i, traccia, g, activity, map, verificato, outputBindings, inputBindings, outputBindingsExtended, inputBindingsExtended);
                     tracciaSize = traccia.size();
+                    i++;
                 }
                 cBP3(activitiesIDMapping, g, map, outputBindings, inputBindings, outputBindingsExtended, inputBindingsExtended);
 

@@ -105,9 +105,9 @@ public class AllInclassMethodTests {
                 flag=new File(url.toURI()).getCanonicalPath().startsWith(libPath);
             }
             catch (URISyntaxException e) {
-            
+            System.out.println("errore");
             } catch (IOException e) {
-
+             System.out.println("errore");      
             }
             return flag;
         }

@@ -30,6 +30,7 @@ public class ProMCResource extends ProMResource<ConnectionID> {
 			}
 			context.getConnectionManager().getConnection(id).remove();
 		} catch (ConnectionCannotBeObtained e) {
+                    System.out.println("errore");    
 		}
 
 	}

@@ -41,10 +41,10 @@ public class ProgressOverlayDialog extends AbstractOverlayDialog implements Prog
 	 * 
 	 */
 	private static final long serialVersionUID = 2065412432371789921L;
-	protected static Color colorBgUp = new Color(80, 80, 80);
-	protected static Color colorBgDown = new Color(40, 40, 40);
-	protected static Color colorBgInner = new Color(200, 200, 200, 120);
-	protected static Color colorFg = new Color(40, 40, 40);
+	protected static final Color colorBgUp = new Color(80, 80, 80);
+	protected static final Color colorBgDown = new Color(40, 40, 40);
+	protected static final Color colorBgInner = new Color(200, 200, 200, 120);
+	protected static final Color colorFg = new Color(40, 40, 40);
 
 	private final SlickerProgressBar progress;
 	private final JLabel title;

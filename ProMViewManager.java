@@ -24,104 +24,106 @@ import org.processmining.framework.plugin.ProMCanceller;
 import org.processmining.framework.util.Pair;
 
 /**
- * 
  * @author Utente
  */
 public class ProMViewManager extends UpdateSignaller implements ViewManager {
 
-	private static ProMViewManager instance = null;
-	private final UIContext context;
-	private final Map<Class<?>, List<ViewType>> viewClasses = new HashMap<Class<?>, List<ViewType>>();
-	private final List<View> views;
+    private static ProMViewManager instance = new ProMViewManager();
+    private final UIContext context;
+    private final Map<Class<?>, List<ViewType>> viewClasses = new HashMap<Class<?>, List<ViewType>>();
+    private final List<View> views;
 
-	private ProMViewManager(UIContext context) {
-		this.context = context;
-		views = new ArrayList<View>();
+    private ProMViewManager() {
+        context = null;
+    }
 
-		for (ResourceType type : context.getResourceManager().getAllSupportedResourceTypes()) {
-			registerResourceType(type);
-		}
-	}
-        
-        public void rRTP1(Set<Pair<Integer, PluginParameterBinding>> visualizers, ResourceType type){
-            for (Pair<Integer, PluginParameterBinding> binding : visualizers) {
-			viewClasses.get(type.getTypeClass()).add(new ProMViewType(this, type, binding));
-		}
+    private ProMViewManager(UIContext context) {
+        this.context = context;
+        views = new ArrayList<View>();
+
+        for (ResourceType type : context.getResourceManager().getAllSupportedResourceTypes()) {
+            registerResourceType(type);
         }
+    }
 
-	private void registerResourceType(final ResourceType type) {
-		viewClasses.put(type.getTypeClass(), new ArrayList<ViewType>(0));
-		Set<Pair<Integer, PluginParameterBinding>> visualizers = context.getPluginManager().find(Visualizer.class,
-				JComponent.class, UIPluginContext.class, true, false, true, type.getTypeClass());
-		Set<Pair<Integer, PluginParameterBinding>> cancellableVisualizers = context.getPluginManager().find(Visualizer.class,
-				JComponent.class, UIPluginContext.class, true, false, true, type.getTypeClass(), ProMCanceller.class);
-		rRTP1(visualizers, type);
-                
-		for (Pair<Integer, PluginParameterBinding> binding : cancellableVisualizers) {
-			viewClasses.get(type.getTypeClass()).add(new ProMViewType(this, type, binding));
-		}
-		Collections.sort(viewClasses.get(type.getTypeClass()), new Comparator<ViewType>() {
+    public void rRTP1(Set<Pair<Integer, PluginParameterBinding>> visualizers, ResourceType type) {
+        for (Pair<Integer, PluginParameterBinding> binding : visualizers) {
+            viewClasses.get(type.getTypeClass()).add(new ProMViewType(this, type, binding));
+        }
+    }
 
-			public int compare(ViewType o1, ViewType o2) {
-				if (o1 == o2 || o1.equals(o2)) {
-					return 0;
-				}
-				boolean isO1ExactMatch = o1.getPrimaryType() == type.getTypeClass();
-				boolean isO2ExactMatch = o2.getPrimaryType() == type.getTypeClass();
-				if (isO1ExactMatch && !isO2ExactMatch) {
-					return -1;
-				} else if (!isO1ExactMatch && isO2ExactMatch) {
-					return 1;
-				} else {
-					return 0;	
-				} 				
-			}
-		});
-	}
+    private void registerResourceType(final ResourceType type) {
+        viewClasses.put(type.getTypeClass(), new ArrayList<ViewType>(0));
+        Set<Pair<Integer, PluginParameterBinding>> visualizers = context.getPluginManager().find(Visualizer.class,
+                JComponent.class, UIPluginContext.class, true, false, true, type.getTypeClass());
+        Set<Pair<Integer, PluginParameterBinding>> cancellableVisualizers = context.getPluginManager().find(Visualizer.class,
+                JComponent.class, UIPluginContext.class, true, false, true, type.getTypeClass(), ProMCanceller.class);
+        rRTP1(visualizers, type);
 
-	public static ProMViewManager initialize(UIContext contesto) {
-		if (instance == null) {
-			instance = new ProMViewManager(contesto);
-		}
-		return instance;
-	}
+        for (Pair<Integer, PluginParameterBinding> binding : cancellableVisualizers) {
+            viewClasses.get(type.getTypeClass()).add(new ProMViewType(this, type, binding));
+        }
+        Collections.sort(viewClasses.get(type.getTypeClass()), new Comparator<ViewType>() {
 
-	public List<ViewType> getViewTypes(Resource resource) {
-		List<ViewType> result = viewClasses.get(resource.getType().getTypeClass());
-		return (result == null ? Collections.<ViewType>emptyList() : result);
-	}
-	
-	public List<ViewType> getViewTypes(List<Resource> resources) {
-		List<ViewType> views = new ArrayList<ViewType>();
-		for(Resource r : resources){
-			views.addAll(getViewTypes(r));
-		}
-		return views;
-	}
+            public int compare(ViewType o1, ViewType o2) {
+                if (o1 == o2 || o1.equals(o2)) {
+                    return 0;
+                }
+                boolean isO1ExactMatch = o1.getPrimaryType() == type.getTypeClass();
+                boolean isO2ExactMatch = o2.getPrimaryType() == type.getTypeClass();
+                if (isO1ExactMatch && !isO2ExactMatch) {
+                    return -1;
+                } else if (!isO1ExactMatch && isO2ExactMatch) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            }
+        });
+    }
 
-	public List<View> getViews() {
-		return views;
-	}
+    public static ProMViewManager initialize(UIContext contesto) {
+        if (instance == null) {
+            instance = new ProMViewManager(contesto);
+        }
+        return instance;
+    }
 
-	public void addView(View view) {
-		synchronized (views) {
-			views.add(view);
-			signalUpdate();
-		}
-	}
+    public List<ViewType> getViewTypes(Resource resource) {
+        List<ViewType> result = viewClasses.get(resource.getType().getTypeClass());
+        return (result == null ? Collections.<ViewType>emptyList() : result);
+    }
 
-	public void removeView(View view) {
-		synchronized (views) {
-			views.remove(view);
-			view.destroy();
-			signalUpdate();
-		}
-	}
+    public List<ViewType> getViewTypes(List<Resource> resources) {
+        List<ViewType> views = new ArrayList<ViewType>();
+        for (Resource r : resources) {
+            views.addAll(getViewTypes(r));
+        }
+        return views;
+    }
 
-	public UIContext getContext() {
-		return context;
-	}
+    public List<View> getViews() {
+        return views;
+    }
 
+    public void addView(View view) {
+        synchronized (views) {
+            views.add(view);
+            signalUpdate();
+        }
+    }
+
+    public void removeView(View view) {
+        synchronized (views) {
+            views.remove(view);
+            view.destroy();
+            signalUpdate();
+        }
+    }
+
+    public UIContext getContext() {
+        return context;
+    }
 
 
 }

@@ -165,7 +165,10 @@ class FileChooserPropertyListener implements PropertyChangeListener {
 		this.ext = ext.toLowerCase();
 	}
 
-	public String ext;
+	/**
+         * public string
+         */
+        public String ext;
 
 	public void propertyChange(PropertyChangeEvent evt) {
 		if (evt.getPropertyName().equals(JFileChooser.FILE_FILTER_CHANGED_PROPERTY)) {

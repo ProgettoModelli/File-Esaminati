@@ -15,7 +15,7 @@ import org.processmining.framework.plugin.annotations.PluginCategory;
  */
 public class ProMCategoryManager implements CategoryManager {
 
-	private static ProMCategoryManager instance = null;
+	private static ProMCategoryManager instance = new ProMCategoryManager();
 	private List<Category> categories;
 
 	public ProMCategoryManager() {

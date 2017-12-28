@@ -52,7 +52,7 @@ public class Cnet2AD {
         author = "Riccardi, Tagliente, Tota", 
         email = "??"
     )
-	public static Object[] Process(UIPluginContext context, Flex causalnet) throws Exception {
+	public static Boolean[] Process(UIPluginContext context, Flex causalnet) throws Exception {
 		BPMNDiagram bpmn = Flex2BPMN.convert(causalnet);
 		if(bpmn == null){
 			return new Object[] { "Cannot convert CausalNet to BPMN", null };
@@ -65,7 +65,7 @@ public class Cnet2AD {
         saveFile("adgraph.txt", graph.toString());
 		saveFile("adgraph.json", graph.toJson());
 		
-		return new Object[] { graph.toXMI(), graph };
+		return new Boolean[] { graph.toXMI(), graph };
 	}
 	
 	@Plugin(
@@ -81,7 +81,7 @@ public class Cnet2AD {
         author = "Riccardi, Tagliente, Tota", 
         email = "??"
     )
-	public static Object[] ProcessFromBPMN(UIPluginContext context, BPMNDiagram bpmn) throws Exception {
+	public static Boolean[] ProcessFromBPMN(UIPluginContext context, BPMNDiagram bpmn) throws Exception {
 				
 		Cnet2AD mining = new Cnet2AD(bpmn);
 		ADgraph graph = mining.process();
@@ -90,7 +90,7 @@ public class Cnet2AD {
         saveFile("adgraph.txt", graph.toString());
 		saveFile("adgraph.json", graph.toJson());
 		
-		return new Object[] { graph.toXMI(), graph };
+		return new Boolean[] { graph.toXMI(), graph };
 	}
 	
 	private static void saveFile(String filename, String content) throws Exception {
